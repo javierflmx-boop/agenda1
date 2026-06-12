@@ -941,17 +941,37 @@ function renderDay(){
     row.appendChild(content);tl.appendChild(row);
   }
 
-  // swipe left/right to change day
+  // ── SWIPE TO CHANGE DAY ──
+  // Use the panel wrapper so we catch swipes anywhere in day view
+  // Active listeners with preventDefault block the wall-open gesture
   var tlPanel=document.getElementById('panel-tl');
-  var sx=0,sy=0;
-  tlPanel.addEventListener('touchstart',function(e){sx=e.touches[0].clientX;sy=e.touches[0].clientY;},{passive:true});
-  tlPanel.addEventListener('touchend',function(e){
-    var dx=e.changedTouches[0].clientX-sx;
-    var dy=e.changedTouches[0].clientY-sy;
-    if(Math.abs(dx)>55&&Math.abs(dy)<50){
+  // Remove old listeners by cloning (safe pattern)
+  var fresh=tlPanel.cloneNode(false);
+  while(tlPanel.firstChild) fresh.appendChild(tlPanel.firstChild);
+  tlPanel.parentNode.replaceChild(fresh,tlPanel);
+  // Re-cache after clone
+  document.getElementById('timeline'); // just to confirm DOM
+  var swSx=0,swSy=0,swHoriz=null;
+  fresh.addEventListener('touchstart',function(e){
+    swSx=e.touches[0].clientX;swSy=e.touches[0].clientY;swHoriz=null;
+  },{passive:true});
+  fresh.addEventListener('touchmove',function(e){
+    if(swHoriz!==null) return;
+    var dx=Math.abs(e.touches[0].clientX-swSx);
+    var dy=Math.abs(e.touches[0].clientY-swSy);
+    if(dx<5&&dy<5) return;
+    swHoriz=dx>dy;
+    if(swHoriz&&e.cancelable) e.preventDefault();
+  },{passive:false});
+  fresh.addEventListener('touchend',function(e){
+    if(!swHoriz) return;
+    var dx=e.changedTouches[0].clientX-swSx;
+    if(Math.abs(dx)>44){
+      e.stopImmediatePropagation();
       shiftDay(dx<0?1:-1);
     }
-  },{passive:true});
+    swHoriz=null;
+  },{passive:false});
 }
 
 // convert CSS var color or hex to rgba
@@ -1244,12 +1264,13 @@ function updateSideTabs(){
   var lb=document.getElementById('laterBadge');lb.style.display=clients.length?'flex':'none';lb.textContent=clients.length;
 }
 
-// swipe left to open done wall
+// swipe left to open done wall — only when NOT on day panel
 (function(){
   var sx=0,sy=0;
   document.addEventListener('touchstart',function(e){sx=e.touches[0].clientX;sy=e.touches[0].clientY;},{passive:true});
   document.addEventListener('touchend',function(e){
     if(document.querySelector('.world-wall.open'))return;
+    if(document.getElementById('panel-tl').classList.contains('active'))return;
     var dx=e.changedTouches[0].clientX-sx,dy=e.changedTouches[0].clientY-sy;
     if(dx<-80&&Math.abs(dy)<60&&sx>window.innerWidth*0.4)openDoneWall();
   },{passive:true});

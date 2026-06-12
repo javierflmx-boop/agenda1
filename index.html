@@ -48,25 +48,34 @@ body{font-family:'Barlow',sans-serif;font-weight:400;background:var(--w);color:v
 .cal-d.other{color:var(--g);}
 .cal-d.is-today{outline:1.5px solid var(--b);}
 .cal-d.selected{background:var(--b)!important;color:var(--w);}
+.cal-d.selected .day-pill{opacity:.25;}
 
-/* ── DAY COLOR BAR (replaces tiny dots) ── */
-.day-bar{
+/* ── DAY PILL — fills entire square ── */
+.day-pill{
   position:absolute;
-  bottom:3px;left:10%;right:10%;
-  height:3px;
-  border-radius:2px;
+  inset:2px;
+  border-radius:8px;
   display:flex;
   overflow:hidden;
-  gap:1px;
+  z-index:0;
 }
-.day-bar-seg{
+.day-pill-seg{
   flex:1;
   height:100%;
-  border-radius:2px;
-  min-width:3px;
+  opacity:.35;
 }
-/* selected day — bar shows on dark bg */
-.cal-d.selected .day-bar-seg{opacity:.55;}
+/* single event — even stronger */
+.cal-d.has-1 .day-pill-seg{opacity:.55;}
+
+.cal-d.has-events .day-num{
+  position:relative;
+  z-index:1;
+  font-weight:700;
+  font-size:13px;
+}
+.cal-d.is-today{outline:2px solid var(--b);outline-offset:-2px;border-radius:8px;}
+.cal-d.selected .day-num{color:var(--w) !important;}
+
 
 /* ── DAY SUMMARY ── */
 .day-summary{margin:0 18px 12px;border:1px solid var(--ln);border-radius:8px;padding:13px 15px;}
@@ -107,12 +116,33 @@ body{font-family:'Barlow',sans-serif;font-weight:400;background:var(--w);color:v
 .wh-done{color:#777777;}
 
 /* ── TIMELINE ── */
-.tl-head{padding:14px 18px 11px;border-bottom:1px solid var(--ln);display:flex;align-items:flex-end;justify-content:space-between;}
+.tl-head{padding:14px 18px 11px;border-bottom:1px solid var(--ln);display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.day-nav-btn{
+  background:none;border:1px solid var(--ln);
+  color:var(--b);font-size:22px;
+  width:38px;height:38px;border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;-webkit-tap-highlight-color:transparent;
+  flex-shrink:0;transition:background .12s;
+}
+.day-nav-btn:active{background:var(--g);}
+
 .tl-date-big{font-family:'Bebas Neue',sans-serif;font-size:36px;letter-spacing:2px;line-height:1;}
 .tl-wday{font-size:10px;font-weight:400;color:#777777;letter-spacing:.12em;text-transform:uppercase;margin-bottom:3px;}
 .add-btn{border:1px solid var(--b);background:var(--b);color:var(--w);font-family:'Barlow',sans-serif;font-weight:400;font-size:10px;letter-spacing:.12em;text-transform:uppercase;padding:9px 14px;cursor:pointer;border-radius:4px;-webkit-tap-highlight-color:transparent;}
 .add-btn:active{opacity:.8;}
 .timeline{padding:0;}
+
+/* ── DAY PAGE TURN ANIMATION ── */
+.tl-page{
+  animation-duration:.28s;
+  animation-timing-function:cubic-bezier(.32,.72,0,1);
+  animation-fill-mode:both;
+}
+@keyframes slideInRight{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
+@keyframes slideInLeft {from{transform:translateX(-100%);opacity:0}to{transform:translateX(0);opacity:1}}
+.tl-page.from-right{animation-name:slideInRight;}
+.tl-page.from-left {animation-name:slideInLeft;}
 .t-row{display:grid;grid-template-columns:42px 1fr;min-height:56px;border-bottom:1px solid var(--g2);}
 .t-hour{font-size:10px;font-weight:400;color:#777777;text-align:right;padding:9px 11px 0 0;border-right:1px solid var(--ln);}
 .t-content{padding:5px 13px;display:flex;flex-direction:column;gap:4px;justify-content:center;}
@@ -492,7 +522,11 @@ body{font-family:'Barlow',sans-serif;font-weight:400;background:var(--w);color:v
 <!-- DAY PANEL -->
 <div class="panel" id="panel-tl">
   <div class="tl-head">
-    <div><div class="tl-wday" id="tlWday"></div><div class="tl-date-big" id="tlDateBig"></div></div>
+    <button class="day-nav-btn" onclick="shiftDay(-1)">&#8249;</button>
+    <div style="flex:1;text-align:center;">
+      <div class="tl-wday" id="tlWday"></div>
+      <div class="tl-date-big" id="tlDateBig"></div>
+    </div>
     <button class="add-btn" onclick="openModal()">+ add</button>
   </div>
   <div class="timeline" id="timeline"></div>
@@ -748,21 +782,22 @@ function renderCal(){
     var e=mkDiv('cal-d');
     if(ds===today)e.classList.add('is-today');
     if(ds===selDate)e.classList.add('selected');
-    var num=mkDiv();num.textContent=dd;e.appendChild(num);
+    var num=mkDiv('day-num');num.textContent=dd;e.appendChild(num);
     var dayEvts=events.filter(function(ev){return ev.date===ds;});
     if(dayEvts.length){
-      // collect unique statuses in order
       var seen={},seenList=[];
       dayEvts.forEach(function(ev){
         if(!seen[ev.status]){seen[ev.status]=1;seenList.push(ev.status);}
       });
-      var bar=mkDiv('day-bar');
+      e.classList.add('has-events');
+      if(seenList.length===1) e.classList.add('has-1');
+      var pill=mkDiv('day-pill');
       seenList.forEach(function(status){
-        var seg=mkDiv('day-bar-seg');
+        var seg=mkDiv('day-pill-seg');
         seg.style.background=SC[status]||'#999';
-        bar.appendChild(seg);
+        pill.appendChild(seg);
       });
-      e.appendChild(bar);
+      e.appendChild(pill);
     }
     (function(ds2){e.onclick=function(){selDate=ds2;document.getElementById('mDate').value=ds2;renderAll();showPanel('tl');};})(ds);
     grid.appendChild(e);
@@ -848,25 +883,90 @@ function buildGoalBtns(){
 function startWhTimer(){clearInterval(whTimer);renderWorkingHours();whTimer=setInterval(renderWorkingHours,60000);}
 
 // ── TIMELINE ──
+function shiftDay(dir){
+  var d=new Date(selDate+'T12:00');
+  d.setDate(d.getDate()+dir);
+  selDate=toDS(d);
+  document.getElementById('mDate').value=selDate;
+  renderAll();
+}
+
 function renderDay(){
   var d=new Date(selDate+'T12:00');
   document.getElementById('tlWday').textContent=d.toLocaleDateString('en-US',{weekday:'long'}).toUpperCase();
   document.getElementById('tlDateBig').textContent=d.toLocaleDateString('en-US',{month:'long',day:'numeric'}).toUpperCase();
   var tl=document.getElementById('timeline');tl.innerHTML='';
   var dayEvts=events.filter(function(ev){return ev.date===selDate;}).sort(function(a,b){return a.start.localeCompare(b.start);});
+
   for(var h=WORK_S;h<=WORK_E;h++){
     var row=mkDiv('t-row');
     var lbl=mkDiv('t-hour');lbl.textContent=h===12?'12p':h<12?h+'a':(h-12)+'p';row.appendChild(lbl);
     var content=mkDiv('t-content');
-    var hStr=pad(h)+':00',nxt=pad(h+1)+':00';
-    var hEvts=dayEvts.filter(function(ev){return ev.start>=hStr&&ev.start<nxt;});
-    if(!hEvts.length){
+
+    var hMins=h*60;
+    var hEndMins=(h+1)*60;
+
+    // events starting this hour
+    var starting=dayEvts.filter(function(ev){
+      var sm=toMins(ev.start);
+      return sm>=hMins&&sm<hEndMins;
+    });
+    // events covering this hour (started before, ends after start of this hour)
+    var covering=dayEvts.filter(function(ev){
+      var sm=toMins(ev.start);
+      var em=toMins(ev.end);
+      return sm<hMins&&em>hMins;
+    });
+
+    if(starting.length){
+      starting.forEach(function(ev){content.appendChild(buildEvtCard(ev));});
+      var color=SC[starting[0].status]||'#999';
+      row.style.background=hexToRgba(color,0.14);
+      row.style.borderBottom='1px solid '+hexToRgba(color,0.22);
+    } else if(covering.length){
+      var ev=covering[0];
+      var color=SC[ev.status]||'#999';
+      row.style.background=hexToRgba(color,0.14);
+      row.style.borderBottom='1px solid '+hexToRgba(color,0.2);
+      var cont=mkDiv('t-continuation');
+      cont.style.cssText='font-size:11px;font-weight:400;color:'+hexToRgba(color,0.7)+';letter-spacing:.04em;padding:10px 0;cursor:pointer;';
+      cont.textContent=ev.name;
+      (function(eid){cont.onclick=function(){openModalEdit(eid);};})(ev.id);
+      content.appendChild(cont);
+    } else {
       var free=mkDiv('t-free');free.textContent='\u2014';
-      (function(hs){free.onclick=function(){openModal(hs);};})(hStr);
+      (function(hs){free.onclick=function(){openModal(hs);};})(pad(h)+':00');
       content.appendChild(free);
-    } else {hEvts.forEach(function(ev){content.appendChild(buildEvtCard(ev));});}
+    }
     row.appendChild(content);tl.appendChild(row);
   }
+
+  // swipe left/right to change day
+  var tlPanel=document.getElementById('panel-tl');
+  var sx=0,sy=0;
+  tlPanel.addEventListener('touchstart',function(e){sx=e.touches[0].clientX;sy=e.touches[0].clientY;},{passive:true});
+  tlPanel.addEventListener('touchend',function(e){
+    var dx=e.changedTouches[0].clientX-sx;
+    var dy=e.changedTouches[0].clientY-sy;
+    if(Math.abs(dx)>55&&Math.abs(dy)<50){
+      shiftDay(dx<0?1:-1);
+    }
+  },{passive:true});
+}
+
+// convert CSS var color or hex to rgba
+function hexToRgba(cssVar,alpha){
+  // map our SC values to actual hex
+  var map={
+    'var(--green)':'61,139,94',
+    'var(--orange)':'200,87,26',
+    'var(--red)':'184,60,43',
+    'var(--yellow)':'212,144,10',
+    'var(--mu)':'138,127,116',
+    'var(--ln)':'212,201,188'
+  };
+  var rgb=map[cssVar]||'100,100,100';
+  return 'rgba('+rgb+','+alpha+')';
 }
 function buildEvtCard(ev){
   var card=mkDiv('evt-card s-'+ev.status);

@@ -3,6 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="agenda">
+<meta name="theme-color" content="#F5F0E8">
+<link rel="manifest" href="manifest.json">
 <title>agenda</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@300;400;500;600&family=Cormorant:wght@300&display=swap" rel="stylesheet">
 <style>
@@ -480,6 +485,7 @@ body{font-family:'Barlow',sans-serif;font-weight:400;background:var(--w);color:v
 <div class="topbar">
   <span class="brand">agenda</span>
   <div class="today-chip" id="todayChip"></div>
+  <button id="notifBell" onclick="handleNotifBtn()" style="background:none;border:1px solid var(--ln);cursor:pointer;font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;padding:6px 10px;border-radius:6px;-webkit-tap-highlight-color:transparent;color:var(--mu);font-family:Barlow,sans-serif;flex-shrink:0;">notify</button>
 </div>
 <div class="legend">
   <div class="leg"><div class="leg-dot" style="background:var(--green)"></div>working</div>
@@ -1275,6 +1281,137 @@ function updateSideTabs(){
     if(dx<-80&&Math.abs(dy)<60&&sx>window.innerWidth*0.4)openDoneWall();
   },{passive:true});
 })();
+// ── PWA NOTIFICATIONS ──
+var notifPermission = localStorage.getItem('ag6_notif') || 'default';
+
+function initNotifications(){
+  if(!('Notification' in window)) return;
+  if(Notification.permission === 'granted'){
+    notifPermission = 'granted';
+    localStorage.setItem('ag6_notif','granted');
+    scheduleAllNotifications();
+  }
+  updateNotifBtn();
+}
+
+function requestNotifPermission(){
+  if(!('Notification' in window)){
+    alert('Your browser does not support notifications.');
+    return;
+  }
+  Notification.requestPermission().then(function(result){
+    notifPermission = result;
+    localStorage.setItem('ag6_notif', result);
+    if(result === 'granted'){
+      scheduleAllNotifications();
+      showNotifBadge(false);
+      // send a welcome notification
+      new Notification('agenda', {
+        body: 'Notifications are on. You\'ll be reminded 15 min before each job.',
+        icon: 'icon-192.png',
+        badge: 'icon-192.png'
+      });
+    }
+  });
+}
+
+function scheduleAllNotifications(){
+  if(notifPermission !== 'granted') return;
+  // clear old timers
+  if(window._notifTimers){
+    window._notifTimers.forEach(function(t){clearTimeout(t);});
+  }
+  window._notifTimers = [];
+
+  var now = Date.now();
+  events.forEach(function(ev){
+    if(ev.status === 'personal' || ev.status === 'busy') return;
+    // parse event datetime
+    var evDate = new Date(ev.date + 'T' + ev.start);
+    var fireAt15 = evDate.getTime() - 15*60*1000; // 15 min before
+    var fireAt0  = evDate.getTime();               // at start time
+
+    if(fireAt15 > now){
+      var t1 = setTimeout(function(){
+        new Notification('agenda · 15 min', {
+          body: ev.name + (ev.desc ? ' — ' + ev.desc : ''),
+          icon: 'icon-192.png',
+          tag: ev.id + '_15'
+        });
+      }, fireAt15 - now);
+      window._notifTimers.push(t1);
+    }
+    if(fireAt0 > now){
+      var t2 = setTimeout(function(){
+        new Notification('agenda · starting now', {
+          body: ev.name + (ev.start ? ' at ' + ev.start : ''),
+          icon: 'icon-192.png',
+          tag: ev.id + '_0'
+        });
+      }, fireAt0 - now);
+      window._notifTimers.push(t2);
+    }
+  });
+}
+
+function showNotifBadge(show){
+  var badge = document.getElementById('notifBell');
+  if(badge) badge.style.background = show ? '#B83C2B' : 'transparent';
+}
+
+// re-schedule whenever events change
+var _origPersist = persist;
+persist = function(){
+  _origPersist();
+  scheduleAllNotifications();
+};
+
+// ── NOTIFICATIONS ──
+function handleNotifBtn(){
+  if(!('Notification' in window)){
+    alert('Your browser does not support notifications.\nOn iPhone: open in Safari and add to home screen first.');
+    return;
+  }
+  if(Notification.permission === 'granted'){
+    alert('Notifications are ON ✓\nYou get a reminder 15 min before each job and at start time.');
+  } else {
+    Notification.requestPermission().then(function(result){
+      notifPermission = result;
+      localStorage.setItem('ag6_notif', result);
+      if(result === 'granted'){
+        updateNotifBtn();
+        scheduleAllNotifications();
+        new Notification('agenda', {
+          body: 'Notifications are on. You\'ll be reminded 15 min before each job.',
+          icon: 'icon-192.png'
+        });
+      } else {
+        alert('Notifications blocked.\nOn iPhone: Settings → Safari → Notifications → allow jorni.day');
+      }
+    });
+  }
+}
+
+function updateNotifBtn(){
+  var btn = document.getElementById('notifBell');
+  if(!btn) return;
+  if(notifPermission === 'granted'){
+    btn.textContent = 'notif on';
+    btn.style.color = '#3D8B5E';
+    btn.style.borderColor = '#3D8B5E';
+  } else {
+    btn.textContent = 'notify';
+    btn.style.color = 'var(--mu)';
+    btn.style.borderColor = 'var(--ln)';
+  }
+}
+
+initNotifications();
+
+// register service worker for PWA
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js').catch(function(){});
+}
 </script>
 </body>
 </html>

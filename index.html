@@ -1,1417 +1,862 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="agenda">
-<meta name="theme-color" content="#F5F0E8">
-<link rel="manifest" href="manifest.json">
-<title>agenda</title>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@300;400;500;600&family=Cormorant:wght@300&display=swap" rel="stylesheet">
-<style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-:root{
-  --w:#F5F0E8;--b:#1C1917;--g:#E2D9CE;--g2:#EDE8DF;
-  --ln:#D4C9BC;--mu:#8A7F74;
-  --green:#3D8B5E;--orange:#C8571A;--red:#B83C2B;--yellow:#D4900A;
-  --cdone:#1C1917;--cqueue:#C8571A;--clater:#9B3D6A;
-}
-html{font-size:10px;}
-body{font-family:'Barlow',sans-serif;font-weight:400;background:var(--w);color:var(--b);min-height:100dvh;overflow-x:hidden;}
-
-/* ── TOPBAR ── */
-.topbar{position:sticky;top:0;z-index:50;background:var(--w);border-bottom:1.5px solid var(--ln);display:flex;align-items:center;justify-content:space-between;padding:0 18px;height:50px;}
-.brand{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:4px;}
-.today-chip{font-size:10px;font-weight:400;letter-spacing:.1em;text-transform:uppercase;color:#777777;}
-
-/* ── LEGEND ── */
-.legend{display:flex;gap:14px;padding:9px 18px;border-bottom:1px solid var(--ln);overflow-x:auto;-ms-overflow-style:none;scrollbar-width:none;}
-.legend::-webkit-scrollbar{display:none;}
-.leg{display:flex;align-items:center;gap:5px;font-size:10px;font-weight:400;letter-spacing:.08em;text-transform:uppercase;color:#777777;white-space:nowrap;}
-.leg-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0;}
-
-/* ── PANELS ── */
-.panel{display:none;padding-bottom:72px;}
-.panel.active{display:block;}
-
-/* ── CALENDAR ── */
-.mini-cal{padding:18px 18px 14px;}
-.cal-nav-row{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:18px;}
-.cal-month-name{font-family:'Bebas Neue',sans-serif;font-size:38px;letter-spacing:2px;line-height:1;}
-.cal-year{font-size:10px;font-weight:400;color:#777777;}
-.nav-arrows{display:flex;}
-.nav-btn{background:none;border:1px solid var(--ln);cursor:pointer;font-size:10px;color:#777777;width:36px;height:36px;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;}
-.nav-btn:first-child{border-radius:6px 0 0 6px;}
-.nav-btn:last-child{border-radius:0 6px 6px 0;border-left:none;}
-.nav-btn:active{background:var(--g2);}
-.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);}
-.cal-dn{font-size:10px;font-weight:400;color:#777777;text-align:center;padding:0 0 8px;letter-spacing:.06em;text-transform:uppercase;}
-.cal-d{aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:400;cursor:pointer;border-radius:6px;position:relative;flex-direction:column;gap:1px;-webkit-tap-highlight-color:transparent;transition:background .1s;}
-.cal-d:active{background:var(--g2);}
-.cal-d.other{color:var(--g);}
-.cal-d.is-today{outline:1.5px solid var(--b);}
-.cal-d.selected{background:var(--b)!important;color:var(--w);}
-.cal-d.selected .day-pill{opacity:.25;}
-
-/* ── DAY PILL — fills entire square ── */
-.day-pill{
-  position:absolute;
-  inset:2px;
-  border-radius:8px;
-  display:flex;
-  overflow:hidden;
-  z-index:0;
-}
-.day-pill-seg{
-  flex:1;
-  height:100%;
-  opacity:.35;
-}
-/* single event — even stronger */
-.cal-d.has-1 .day-pill-seg{opacity:.55;}
-
-.cal-d.has-events .day-num{
-  position:relative;
-  z-index:1;
-  font-weight:700;
-  font-size:13px;
-}
-.cal-d.is-today{outline:2px solid var(--b);outline-offset:-2px;border-radius:8px;}
-.cal-d.selected .day-num{color:var(--w) !important;}
-
-
-/* ── DAY SUMMARY ── */
-.day-summary{margin:0 18px 12px;border:1px solid var(--ln);border-radius:8px;padding:13px 15px;}
-.ds-date{font-family:'Bebas Neue',sans-serif;font-size:10px;letter-spacing:2px;margin-bottom:9px;}
-.ds-stats{display:flex;gap:14px;margin-bottom:10px;}
-.ds-num{font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:1px;line-height:1;}
-.ds-lbl{font-size:10px;font-weight:400;color:#777777;letter-spacing:.1em;text-transform:uppercase;}
-.status-badges{display:flex;gap:5px;flex-wrap:wrap;}
-.s-badge{display:flex;align-items:center;gap:4px;font-size:10px;font-weight:400;border:1px solid var(--ln);border-radius:4px;padding:3px 7px;}
-.s-sq{width:7px;height:7px;border-radius:2px;flex-shrink:0;}
-
-/* ── WORKING HOURS ── */
-.wh-box{margin:0 18px 20px;border:1px solid var(--ln);border-radius:8px;padding:13px 15px;transition:opacity .3s;}
-.wh-top{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:9px;}
-.wh-label{font-size:10px;font-weight:400;letter-spacing:.16em;text-transform:uppercase;color:#777777;}
-.wh-set{font-size:10px;font-weight:400;color:#777777;cursor:pointer;border-bottom:1px dotted var(--ln);-webkit-tap-highlight-color:transparent;}
-.wh-main-row{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:9px;}
-.wh-big{display:flex;align-items:baseline;gap:3px;}
-.wh-hours{font-family:'Bebas Neue',sans-serif;font-size:44px;letter-spacing:1px;line-height:1;transition:color .4s;}
-.wh-unit{font-size:10px;font-weight:400;color:#777777;letter-spacing:.1em;text-transform:uppercase;}
-.wh-right{text-align:right;display:flex;flex-direction:column;gap:3px;padding-bottom:3px;}
-.wh-right-row{font-size:10px;font-weight:400;display:flex;align-items:center;gap:5px;justify-content:flex-end;}
-.wh-rdot{width:7px;height:7px;border-radius:2px;flex-shrink:0;}
-.wh-bar-wrap{height:5px;background:var(--g2);border-radius:3px;overflow:hidden;display:flex;margin-bottom:8px;}
-.wh-seg{height:100%;transition:width .5s ease;}
-.wh-legend{display:flex;gap:10px;flex-wrap:wrap;}
-.wh-leg{display:flex;align-items:center;gap:4px;font-size:10px;font-weight:400;color:#777777;}
-.wh-ldot{width:6px;height:6px;border-radius:2px;flex-shrink:0;}
-.wh-picker{display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--g2);}
-.wh-picker.open{display:block;}
-.wh-picker-lbl{font-size:10px;font-weight:400;letter-spacing:.14em;text-transform:uppercase;color:#777777;margin-bottom:7px;}
-.wh-goal-btns{display:flex;gap:5px;flex-wrap:wrap;}
-.wh-gbtn{border:1px solid var(--ln);background:transparent;font-family:'Bebas Neue',sans-serif;font-size:10px;letter-spacing:1px;color:#777777;width:40px;height:36px;border-radius:4px;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:all .12s;}
-.wh-gbtn.active{background:var(--b);border-color:var(--b);color:var(--w);}
-.wh-great{color:var(--green);}
-.wh-ok{color:var(--orange);}
-.wh-low{color:var(--red);}
-.wh-done{color:#777777;}
-
-/* ── TIMELINE ── */
-.tl-head{padding:14px 18px 11px;border-bottom:1px solid var(--ln);display:flex;align-items:center;justify-content:space-between;gap:8px;}
-.day-nav-btn{
-  background:none;border:1px solid var(--ln);
-  color:var(--b);font-size:22px;
-  width:38px;height:38px;border-radius:8px;
-  display:flex;align-items:center;justify-content:center;
-  cursor:pointer;-webkit-tap-highlight-color:transparent;
-  flex-shrink:0;transition:background .12s;
-}
-.day-nav-btn:active{background:var(--g);}
-
-.tl-date-big{font-family:'Bebas Neue',sans-serif;font-size:36px;letter-spacing:2px;line-height:1;}
-.tl-wday{font-size:10px;font-weight:400;color:#777777;letter-spacing:.12em;text-transform:uppercase;margin-bottom:3px;}
-.add-btn{border:1px solid var(--b);background:var(--b);color:var(--w);font-family:'Barlow',sans-serif;font-weight:400;font-size:10px;letter-spacing:.12em;text-transform:uppercase;padding:9px 14px;cursor:pointer;border-radius:4px;-webkit-tap-highlight-color:transparent;}
-.add-btn:active{opacity:.8;}
-.timeline{padding:0;}
-
-/* ── DAY PAGE TURN ANIMATION ── */
-.tl-page{
-  animation-duration:.28s;
-  animation-timing-function:cubic-bezier(.32,.72,0,1);
-  animation-fill-mode:both;
-}
-@keyframes slideInRight{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
-@keyframes slideInLeft {from{transform:translateX(-100%);opacity:0}to{transform:translateX(0);opacity:1}}
-.tl-page.from-right{animation-name:slideInRight;}
-.tl-page.from-left {animation-name:slideInLeft;}
-.t-row{display:grid;grid-template-columns:42px 1fr;min-height:56px;border-bottom:1px solid var(--g2);}
-.t-hour{font-size:10px;font-weight:400;color:#777777;text-align:right;padding:9px 11px 0 0;border-right:1px solid var(--ln);}
-.t-content{padding:5px 13px;display:flex;flex-direction:column;gap:4px;justify-content:center;}
-.t-free{font-size:10px;font-weight:400;color:var(--g);letter-spacing:.06em;cursor:pointer;padding:9px 0;}
-.t-free:active{color:#777777;}
-.evt-card{display:flex;align-items:stretch;border-radius:4px;overflow:hidden;cursor:pointer;-webkit-tap-highlight-color:transparent;}
-.evt-strip{width:4px;flex-shrink:0;}
-.evt-body{flex:1;padding:7px 9px;min-width:0;}
-.evt-name{font-size:10px;font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.evt-sub{font-size:10px;font-weight:400;color:#777777;margin-top:2px;}
-.evt-del{background:none;border:none;color:#777777;font-size:10px;padding:0 11px;cursor:pointer;align-self:center;}
-.s-working{background:rgba(61,139,94,.10);}
-.s-waiting{background:rgba(200,87,26,.10);}
-.s-late{background:rgba(184,60,43,.10);}
-.s-urgent{background:rgba(212,144,10,.14);}
-.s-personal,.s-busy{background:var(--g2);}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
-.evt-card.s-urgent .evt-strip{animation:pulse 2s ease-in-out infinite;}
-
-/* ── FIND SLOT ── */
-.slot-panel{padding:20px 18px;}
-.sp-title{font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:2px;margin-bottom:16px;}
-.dur-row{display:flex;gap:10px;align-items:center;margin-bottom:14px;}
-.dur-inp{width:68px;border:none;border-bottom:1.5px solid var(--b);background:transparent;font-family:'Bebas Neue',sans-serif;font-size:34px;letter-spacing:2px;color:var(--b);text-align:center;outline:none;padding:0 2px 3px;}
-.dur-inp::placeholder{color:var(--g);}
-.dur-unit{font-size:10px;font-weight:400;color:#777777;letter-spacing:.1em;text-transform:uppercase;}
-.view-toggle{display:flex;border:1px solid var(--ln);border-radius:6px;overflow:hidden;margin-bottom:14px;}
-.vt-btn{flex:1;border:none;background:transparent;font-family:'Barlow',sans-serif;font-weight:400;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#777777;padding:9px 4px;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:all .12s;}
-.vt-btn.active{background:var(--b);color:var(--w);}
-.find-btn{width:100%;border:1.5px solid var(--b);background:transparent;color:var(--b);font-family:'Barlow',sans-serif;font-weight:400;font-size:10px;letter-spacing:.16em;text-transform:uppercase;padding:13px;cursor:pointer;border-radius:4px;-webkit-tap-highlight-color:transparent;}
-.find-btn:active{background:var(--b);color:var(--w);}
-.slot-day-header{font-size:10px;font-weight:400;letter-spacing:.14em;text-transform:uppercase;color:var(--b);padding:10px 0 3px;border-bottom:1px solid var(--g2);margin-bottom:3px;}
-.slot-row-sm{display:flex;align-items:center;justify-content:space-between;padding:9px 11px;border:1px solid var(--ln);cursor:pointer;font-size:10px;font-weight:400;border-radius:4px;margin-bottom:3px;-webkit-tap-highlight-color:transparent;}
-.slot-row-sm:active{border-color:var(--b);background:var(--g2);}
-.slot-free{color:#777777;font-size:10px;}
-.no-slots{font-size:10px;font-weight:400;color:var(--red);margin-top:8px;letter-spacing:.06em;}
-
-/* ── MODAL ── */
-.modal-overlay{display:none;position:fixed;inset:0;background:rgba(28,25,23,.5);z-index:200;align-items:flex-end;justify-content:center;}
-.modal-overlay.open{display:flex;}
-.modal{background:var(--w);width:100%;max-width:520px;border-radius:16px 16px 0 0;padding:22px 20px 38px;max-height:92dvh;overflow-y:auto;animation:growUp .26s cubic-bezier(.34,1.1,.64,1);}
-@keyframes growUp{from{transform:translateY(24px) scale(.97);opacity:0}to{transform:translateY(0) scale(1);opacity:1}}
-.modal-handle{width:34px;height:3px;background:var(--ln);border-radius:2px;margin:0 auto 16px;}
-.modal-title{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:2px;margin-bottom:2px;}
-.modal-sub{font-size:10px;font-weight:400;color:#777777;margin-bottom:16px;letter-spacing:.04em;}
-.f-group{margin-bottom:16px;}
-.f-label{font-size:10px;font-weight:400;letter-spacing:.14em;text-transform:uppercase;color:#777777;margin-bottom:6px;}
-.f-input{width:100%;border:none;border-bottom:1px solid var(--ln);background:transparent;font-family:'Barlow',sans-serif;font-weight:400;font-size:10px;color:var(--b);padding:8px 0;outline:none;transition:border-color .15s;-webkit-appearance:none;}
-.f-input:focus{border-bottom-color:var(--b);}
-.f-input::placeholder{color:var(--g);font-size:10px;font-weight:400;}
-.f-input.err{border-bottom-color:var(--red);}
-.status-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;}
-.s-btn{border:1px solid var(--ln);background:transparent;font-family:'Barlow',sans-serif;font-weight:400;font-size:10px;letter-spacing:.06em;text-transform:uppercase;padding:10px 7px;cursor:pointer;border-radius:4px;color:#777777;-webkit-tap-highlight-color:transparent;}
-.s-btn.active{color:var(--b);font-weight:400;}
-.s-btn[data-s="working"].active{background:rgba(61,139,94,.15);border-color:var(--green);}
-.s-btn[data-s="waiting"].active{background:rgba(200,87,26,.15);border-color:var(--orange);}
-.s-btn[data-s="late"].active{background:rgba(184,60,43,.15);border-color:var(--red);}
-.s-btn[data-s="urgent"].active{background:rgba(212,144,10,.18);border-color:var(--yellow);}
-.s-btn[data-s="personal"].active,.s-btn[data-s="busy"].active{background:var(--g2);border-color:#777777;}
-.time-row{display:flex;align-items:center;gap:9px;}
-.time-sep{color:#777777;font-size:10px;font-weight:400;flex-shrink:0;}
-.time-row .f-input{text-align:center;}
-.modal-actions{display:flex;gap:9px;margin-top:18px;}
-.modal-save{flex:2;border:1.5px solid var(--b);background:var(--b);color:var(--w);font-family:'Barlow',sans-serif;font-weight:400;font-size:10px;letter-spacing:.16em;text-transform:uppercase;padding:14px;cursor:pointer;border-radius:4px;-webkit-tap-highlight-color:transparent;}
-.modal-save:active{background:transparent;color:var(--b);}
-.modal-cancel{flex:1;border:1px solid var(--ln);background:transparent;color:#777777;font-family:'Barlow',sans-serif;font-weight:400;font-size:10px;letter-spacing:.1em;text-transform:uppercase;padding:14px;cursor:pointer;border-radius:4px;-webkit-tap-highlight-color:transparent;}
-.modal-cancel:active{border-color:var(--b);color:var(--b);}
-.modal-del-btn{display:none;width:100%;margin-top:9px;border:1px solid var(--red);background:transparent;color:var(--red);font-family:'Barlow',sans-serif;font-weight:400;font-size:10px;letter-spacing:.14em;text-transform:uppercase;padding:12px;cursor:pointer;border-radius:4px;-webkit-tap-highlight-color:transparent;}
-.modal-del-btn:active{background:var(--red);color:var(--w);}
-
-/* ── BOTTOM NAV ── */
-.bottom-nav{
-  position:fixed;bottom:0;left:0;right:0;
-  background:#1C1917;
-  display:flex;z-index:50;
-  padding-bottom:env(safe-area-inset-bottom);
-  height:58px;
-  border-top:1px solid rgba(255,255,255,.07);
-}
-.bnav{
-  flex:1;display:flex;align-items:center;justify-content:center;
-  cursor:pointer;border:none;background:none;
-  -webkit-tap-highlight-color:transparent;
-  transition:background .15s;
-  position:relative;
-}
-.bnav:active{background:rgba(255,255,255,.05);}
-
-/* mango underline on active */
-.bnav::after{
-  content:'';
-  position:absolute;
-  bottom:0;left:18%;right:18%;
-  height:2px;
-  background:transparent;
-  border-radius:2px 2px 0 0;
-  transition:background .18s;
-}
-.bnav.active::after{background:#D4900A;}
-
-/* divider between tabs */
-.bnav+.bnav::before{
-  content:'';
-  position:absolute;left:0;top:20%;bottom:20%;
-  width:1px;background:rgba(255,255,255,.07);
-}
-
-.bnav-lbl{
-  font-family:'Barlow',sans-serif;
-  font-size:10px;font-weight:600;
-  letter-spacing:.14em;text-transform:uppercase;
-  color:rgba(255,255,255,.55);
-  transition:color .15s;
-  line-height:1;
-}
-.bnav.active .bnav-lbl{color:#ffffff;font-weight:700;}
-
-
-/* done wall add bar */
-.dw-add-bar{
-  display:flex;align-items:center;height:58px;
-  padding:0 20px;flex-shrink:0;
-  border-top:1px solid rgba(255,255,255,.09);
-  background:rgba(255,255,255,.04);
-  gap:0;
-}
-.dw-add-inp{
-  flex:1;border:none;background:transparent;
-  font-family:'Barlow',sans-serif;font-weight:400;font-size:10px;
-  color:#fff;outline:none;caret-color:#fff;
-}
-.dw-add-inp::placeholder{color:rgba(255,255,255,.25);}
-.dw-add-btn{
-  background:rgba(255,255,255,.12);color:#fff;
-  border:none;border-radius:7px;
-  font-size:10px;width:34px;height:34px;
-  display:flex;align-items:center;justify-content:center;
-  cursor:pointer;-webkit-tap-highlight-color:transparent;flex-shrink:0;
-}
-.dw-add-btn:active{background:rgba(255,255,255,.24);}
-
-/* done mini modal */
-.dw-modal-overlay{
-  display:none;position:fixed;inset:0;
-  background:rgba(28,25,23,.6);z-index:150;
-  align-items:flex-end;justify-content:center;
-}
-.dw-modal-overlay.open{display:flex;}
-.dw-mini-modal{
-  background:#2A2420;
-  width:100%;max-width:520px;
-  border-radius:16px 16px 0 0;
-  padding:20px 20px 40px;
-  animation:growUp .26s cubic-bezier(.34,1.1,.64,1);
-}
-.dw-mm-handle{width:32px;height:3px;background:rgba(255,255,255,.15);border-radius:2px;margin:0 auto 16px;}
-.dw-mm-title{font-family:'Bebas Neue',sans-serif;font-size:10px;letter-spacing:2px;color:#fff;margin-bottom:18px;}
-.dw-mm-group{margin-bottom:16px;}
-.dw-mm-label{font-size:10px;font-weight:400;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.35);margin-bottom:6px;}
-.dw-mm-inp{
-  width:100%;border:none;border-bottom:1px solid rgba(255,255,255,.15);
-  background:transparent;font-family:'Barlow',sans-serif;font-weight:400;
-  font-size:10px;color:#fff;padding:8px 0;outline:none;
-  caret-color:#fff;-webkit-appearance:none;
-}
-.dw-mm-inp:focus{border-bottom-color:rgba(255,255,255,.5);}
-.dw-mm-inp::placeholder{color:rgba(255,255,255,.2);}
-.dw-mm-save{
-  width:100%;margin-top:6px;
-  background:#fff;color:#111;border:none;
-  font-family:'Barlow',sans-serif;font-weight:400;font-size:10px;
-  letter-spacing:.18em;text-transform:uppercase;
-  padding:15px;cursor:pointer;border-radius:4px;
-  -webkit-tap-highlight-color:transparent;
-}
-.dw-mm-save:active{background:#ddd;}
-
-.side-tabs{position:fixed;right:0;top:50%;transform:translateY(-50%);z-index:40;display:flex;flex-direction:column;gap:3px;}
-.side-tab{
-  display:flex;align-items:center;justify-content:center;
-  width:26px;padding:18px 0;
-  border-radius:8px 0 0 8px;
-  cursor:pointer;-webkit-tap-highlight-color:transparent;
-  transition:width .16s ease;
-  position:relative;
-}
-.side-tab:active{width:30px;}
-.side-tab-done {background:var(--cdone);}
-.side-tab-queue{background:var(--cqueue);}
-.side-tab-later{background:var(--clater);}
-
-.side-tab-lbl{
-  font-family:'Barlow',sans-serif;
-  font-size:9px;font-weight:400;
-  letter-spacing:.2em;text-transform:uppercase;
-  writing-mode:vertical-rl;
-  transform:rotate(180deg);
-  line-height:1;
-}
-.side-tab-done  .side-tab-lbl{color:rgba(255,255,255,.65);}
-.side-tab-queue .side-tab-lbl{color:rgba(255,255,255,.8);}
-.side-tab-later .side-tab-lbl{color:rgba(255,255,255,.8);}
-
-.side-tab-badge{
-  position:absolute;top:8px;left:50%;transform:translateX(-50%);
-  font-family:'Barlow',sans-serif;font-size:10px;font-weight:600;
-  width:15px;height:15px;border-radius:50%;
-  display:none;align-items:center;justify-content:center;line-height:1;
-}
-.side-tab-done  .side-tab-badge{background:var(--green);color:#111;}
-.side-tab-queue .side-tab-badge{background:#fff;color:var(--cqueue);}
-.side-tab-later .side-tab-badge{background:#fff;color:var(--clater);}
-
-
-/* ── WORLD WALLS ── */
-.world-wall{position:fixed;inset:0;z-index:100;display:flex;flex-direction:column;transform:scale(.92);opacity:0;pointer-events:none;transition:transform .3s cubic-bezier(.34,1.2,.64,1),opacity .25s ease;overflow:hidden;transform-origin:center right;}
-.world-wall.open{transform:scale(1);opacity:1;pointer-events:all;}
-.world-done {background:var(--cdone);}
-.world-queue{background:var(--cqueue);}
-.world-later{background:var(--clater);}
-
-.wall-header{display:flex;align-items:center;justify-content:space-between;padding:18px 20px 13px;flex-shrink:0;}
-.wall-world-name{font-family:'Bebas Neue',sans-serif;font-size:36px;letter-spacing:2px;line-height:1;}
-.world-done  .wall-world-name{color:rgba(255,255,255,.09);}
-.world-queue .wall-world-name{color:rgba(255,255,255,.16);}
-.world-later .wall-world-name{color:rgba(255,255,255,.16);}
-.wall-right{display:flex;align-items:center;gap:9px;}
-.wall-count{font-family:'Barlow',sans-serif;font-size:10px;font-weight:400;letter-spacing:.06em;}
-.world-done  .wall-count{color:rgba(255,255,255,.26);}
-.world-queue .wall-count{color:rgba(255,255,255,.4);}
-.world-later .wall-count{color:rgba(255,255,255,.4);}
-.wall-close{background:none;border:none;font-size:10px;cursor:pointer;padding:3px 5px;-webkit-tap-highlight-color:transparent;line-height:1;}
-.world-done  .wall-close{color:rgba(255,255,255,.28);}
-.world-queue .wall-close{color:rgba(255,255,255,.38);}
-.world-later .wall-close{color:rgba(255,255,255,.38);}
-.wall-close:active{opacity:1;}
-
-/* ── DONE WALL — swipeable cards ── */
-.dw-track{flex:1;display:flex;overflow-x:scroll;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
-.dw-track::-webkit-scrollbar{display:none;}
-.dw-card{flex:0 0 100%;width:100%;scroll-snap-align:start;display:flex;flex-direction:column;justify-content:space-between;padding:26px 26px 36px;position:relative;overflow:hidden;}
-.dw-card.bg-black{background:#111;}
-.dw-card.bg-white{background:#fff;}
-.dw-card.bg-mango{background:#C8884A;}
-.dw-num{font-family:'Bebas Neue',sans-serif;font-size:clamp(90px,26vw,150px);line-height:.85;letter-spacing:-.02em;opacity:.07;position:absolute;right:-6px;bottom:70px;pointer-events:none;}
-.bg-black .dw-num,.bg-mango .dw-num{color:#fff;}
-.bg-white .dw-num{color:#111;}
-.dw-top{display:flex;flex-direction:column;gap:3px;}
-.dw-tag{font-family:'Barlow',sans-serif;font-size:10px;font-weight:400;letter-spacing:.22em;text-transform:uppercase;}
-.bg-black .dw-tag{color:rgba(255,255,255,.28);}
-.bg-white .dw-tag{color:#aaa;}
-.bg-mango .dw-tag{color:rgba(0,0,0,.38);}
-.dw-date-lbl{font-family:'Bebas Neue',sans-serif;font-size:10px;letter-spacing:.14em;}
-.bg-black .dw-date-lbl{color:rgba(255,255,255,.2);}
-.bg-white .dw-date-lbl{color:#bbb;}
-.bg-mango .dw-date-lbl{color:rgba(0,0,0,.3);}
-.dw-body{display:flex;flex-direction:column;gap:6px;margin-top:auto;padding-bottom:6px;}
-.dw-client{font-family:'Bebas Neue',sans-serif;font-size:clamp(32px,8.5vw,52px);line-height:1;letter-spacing:.01em;}
-.bg-black .dw-client{color:#fff;}
-.bg-white .dw-client{color:#111;}
-.bg-mango .dw-client{color:#111;}
-.dw-desc{font-family:'Barlow',sans-serif;font-size:10px;font-weight:400;line-height:1.4;}
-.bg-black .dw-desc{color:rgba(255,255,255,.4);}
-.bg-white .dw-desc{color:#888;}
-.bg-mango .dw-desc{color:rgba(0,0,0,.46);}
-.dw-pills{display:flex;gap:6px;flex-wrap:wrap;margin-top:3px;}
-.dw-pill{font-family:'Barlow',sans-serif;font-size:10px;font-weight:400;padding:4px 9px;border-radius:18px;}
-.bg-black .dw-pill{background:rgba(255,255,255,.07);color:rgba(255,255,255,.46);}
-.bg-white .dw-pill{background:#f4f4f4;color:#888;}
-.bg-mango .dw-pill{background:rgba(0,0,0,.08);color:rgba(0,0,0,.46);}
-.dw-dots{display:flex;gap:5px;justify-content:center;padding:10px 0 14px;flex-shrink:0;}
-.dw-dot{width:4px;height:4px;border-radius:50%;background:rgba(255,255,255,.17);transition:all .2s;}
-.dw-dot.active{background:#fff;width:13px;border-radius:2px;}
-.dw-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;padding:40px;}
-.dw-empty-big{font-family:'Bebas Neue',sans-serif;font-size:68px;letter-spacing:2px;color:rgba(255,255,255,.07);line-height:1;}
-.dw-empty-msg{font-size:10px;font-weight:400;color:rgba(255,255,255,.24);letter-spacing:.06em;text-align:center;line-height:1.6;}
-
-/* ── QUEUE & LATER & CLIENTS (list walls) ── */
-.ql-body{flex:1;overflow-y:auto;padding:2px 0;}
-.ql-body::-webkit-scrollbar{display:none;}
-.ql-row{display:flex;align-items:center;gap:13px;padding:15px 20px;border-bottom:1px solid rgba(255,255,255,.07);cursor:pointer;-webkit-tap-highlight-color:transparent;}
-.ql-row:active{background:rgba(255,255,255,.06);}
-.ql-num{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:1px;color:rgba(255,255,255,.16);flex-shrink:0;width:30px;text-align:right;line-height:1;}
-.ql-info{flex:1;min-width:0;}
-.ql-name{font-family:'Barlow',sans-serif;font-size:10px;font-weight:400;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.ql-meta{font-size:10px;font-weight:400;color:rgba(255,255,255,.36);margin-top:2px;}
-.ql-arr{font-size:10px;color:rgba(255,255,255,.2);}
-.ql-faded{opacity:.35;}
-.ql-empty{padding:50px 26px;text-align:center;font-size:10px;font-weight:400;color:rgba(255,255,255,.26);line-height:1.6;}
-.ql-add{display:flex;align-items:center;height:58px;padding:0 20px;flex-shrink:0;border-top:1px solid rgba(255,255,255,.09);background:rgba(0,0,0,.08);}
-.ql-inp{flex:1;border:none;background:transparent;font-family:'Barlow',sans-serif;font-weight:400;font-size:10px;color:#fff;outline:none;caret-color:#fff;}
-.ql-inp::placeholder{color:rgba(255,255,255,.26);}
-.ql-btn{background:rgba(255,255,255,.13);color:#fff;border:none;border-radius:7px;font-size:10px;width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent;flex-shrink:0;}
-.ql-btn:active{background:rgba(255,255,255,.24);}
-
-/* client detail in later wall */
-.ql-avatar{width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:10px;color:rgba(255,255,255,.6);flex-shrink:0;}
-
-/* ── SPLASH ── */
-#splash{position:fixed;inset:0;z-index:999;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:opacity .7s ease,transform .7s ease;}
-#splash.hide{opacity:0;transform:scale(1.04);pointer-events:none;}
-.sp-logo-b{position:relative;display:inline-flex;flex-direction:column;align-items:flex-start;gap:9px;}
-.sp-wordmark{font-family:'Cormorant',serif;font-weight:400;font-size:clamp(54px,15vw,76px);letter-spacing:.26em;color:var(--b);line-height:1;padding-right:.26em;animation:spWord 1s cubic-bezier(.16,1,.3,1) both;}
-.sp-mango-dot{width:8px;height:8px;border-radius:50%;background:#D4900A;position:absolute;right:2px;top:10px;animation:spDot .4s .6s cubic-bezier(.34,1.56,.64,1) both;}
-.sp-dots-row{display:flex;gap:6px;align-items:center;}
-.sp-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0;animation:shootIn .45s cubic-bezier(.22,1.4,.36,1) both;transform:translateX(-120px);}
-.sp-dot:nth-child(1){background:var(--green);animation-delay:.85s;}
-.sp-dot:nth-child(2){background:var(--orange);animation-delay:.95s;}
-.sp-dot:nth-child(3){background:var(--red);animation-delay:1.05s;}
-.sp-dot:nth-child(4){background:var(--yellow);animation-delay:1.15s;}
-@keyframes shootIn{from{transform:translateX(-160px);opacity:0;}60%{transform:translateX(6px);opacity:1;}80%{transform:translateX(-3px);}to{transform:translateX(0);opacity:1;}}
-.sp-tap{position:absolute;bottom:48px;font-size:10px;font-weight:400;letter-spacing:.18em;text-transform:uppercase;color:#ccc;animation:spBlink 2.4s 1.8s ease infinite;}
-@keyframes spWord{from{opacity:0;letter-spacing:.5em}to{opacity:1;letter-spacing:.26em}}
-@keyframes spDot{from{opacity:0;transform:scale(0)}to{opacity:1;transform:scale(1)}}
-@keyframes spBlink{0%,100%{opacity:.22}50%{opacity:1}}
-1}}
-</style>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+  <title>LUMILA — Daily Missions</title>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet"/>
 </head>
-<body>
-
-<!-- SPLASH -->
-<div id="splash" onclick="dismissSplash()">
-  <div class="sp-logo-b">
-    <span class="sp-wordmark">agenda</span>
-    <div class="sp-mango-dot"></div>
-    <div class="sp-dots-row">
-      <div class="sp-dot"></div><div class="sp-dot"></div>
-      <div class="sp-dot"></div><div class="sp-dot"></div>
-    </div>
-  </div>
-  <div class="sp-tap">tap to open</div>
-</div>
-
-<!-- TOPBAR -->
-<div class="topbar">
-  <span class="brand">agenda</span>
-  <div class="today-chip" id="todayChip"></div>
-  <button id="notifBell" onclick="handleNotifBtn()" style="background:none;border:1px solid var(--ln);cursor:pointer;font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;padding:6px 10px;border-radius:6px;-webkit-tap-highlight-color:transparent;color:var(--mu);font-family:Barlow,sans-serif;flex-shrink:0;">notify</button>
-</div>
-<div class="legend">
-  <div class="leg"><div class="leg-dot" style="background:var(--green)"></div>working</div>
-  <div class="leg"><div class="leg-dot" style="background:var(--orange)"></div>waiting</div>
-  <div class="leg"><div class="leg-dot" style="background:var(--red)"></div>late</div>
-  <div class="leg"><div class="leg-dot" style="background:var(--yellow)"></div>urgent</div>
-</div>
-
-<!-- CALENDAR PANEL -->
-<div class="panel active" id="panel-cal">
-  <div class="mini-cal">
-    <div class="cal-nav-row">
-      <div><div class="cal-month-name" id="calMonthName"></div><div class="cal-year" id="calYear"></div></div>
-      <div class="nav-arrows">
-        <button class="nav-btn" onclick="chMo(-1)">&#8249;</button>
-        <button class="nav-btn" onclick="chMo(1)">&#8250;</button>
-      </div>
-    </div>
-    <div class="cal-grid" id="calGrid"></div>
-  </div>
-  <div class="day-summary" id="daySummary"></div>
-  <div class="wh-box" id="whBox">
-    <div class="wh-top">
-      <span class="wh-label">Available today</span>
-      <span class="wh-set" onclick="toggleWhPicker()">goal: <span id="whGoalLbl">8</span>h</span>
-    </div>
-    <div class="wh-main-row">
-      <div class="wh-big"><span class="wh-hours" id="whHours">--</span><span class="wh-unit">h free</span></div>
-      <div class="wh-right" id="whRight"></div>
-    </div>
-    <div class="wh-bar-wrap" id="whBarWrap"></div>
-    <div class="wh-legend" id="whLegend"></div>
-    <div class="wh-picker" id="whPicker">
-      <div class="wh-picker-lbl">How many hours do you want to work?</div>
-      <div class="wh-goal-btns" id="whGoalBtns"></div>
-    </div>
-  </div>
-</div>
-
-<!-- DAY PANEL -->
-<div class="panel" id="panel-tl">
-  <div class="tl-head">
-    <button class="day-nav-btn" onclick="shiftDay(-1)">&#8249;</button>
-    <div style="flex:1;text-align:center;">
-      <div class="tl-wday" id="tlWday"></div>
-      <div class="tl-date-big" id="tlDateBig"></div>
-    </div>
-    <button class="add-btn" onclick="openModal()">+ add</button>
-  </div>
-  <div class="timeline" id="timeline"></div>
-</div>
-
-<!-- FIND PANEL -->
-<div class="panel" id="panel-find">
-  <div class="slot-panel">
-    <div class="sp-title">Find Free Slot</div>
-    <div class="dur-row">
-      <input class="dur-inp" type="number" id="durH" placeholder="2" min="0" max="12" value="2">
-      <span class="dur-unit">h</span>
-      <input class="dur-inp" type="number" id="durM" placeholder="00" min="0" max="59" step="15" value="0">
-      <span class="dur-unit">m</span>
-    </div>
-    <div class="view-toggle">
-      <button class="vt-btn active" onclick="setSlotView('day',this)">Today</button>
-      <button class="vt-btn" onclick="setSlotView('week',this)">Week</button>
-      <button class="vt-btn" onclick="setSlotView('month',this)">Month</button>
-    </div>
-    <button class="find-btn" onclick="findSlots()">&#8594; find available times</button>
-    <div id="slotsList" style="margin-top:13px;"></div>
-  </div>
-</div>
-
-<!-- MODAL -->
-<div class="modal-overlay" id="modalOverlay" onclick="closeBg(event)">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <div class="modal-title" id="modalTitle">New Event</div>
-    <div class="modal-sub" id="modalSub"></div>
-    <div class="f-group">
-      <div class="f-label">Status</div>
-      <div class="status-grid">
-        <button class="s-btn active" data-s="working" onclick="setMS('working',this)">&#x1F7E2; working</button>
-        <button class="s-btn" data-s="waiting" onclick="setMS('waiting',this)">&#x1F7E0; waiting</button>
-        <button class="s-btn" data-s="late" onclick="setMS('late',this)">&#x1F534; late</button>
-        <button class="s-btn" data-s="urgent" onclick="setMS('urgent',this)">&#x1F7E1; urgent</button>
-        <button class="s-btn" data-s="personal" onclick="setMS('personal',this)">personal</button>
-        <button class="s-btn" data-s="busy" onclick="setMS('busy',this)">busy</button>
-      </div>
-    </div>
-    <div class="f-group"><div class="f-label">Client / Title</div><input class="f-input" id="mName" placeholder="Jo&#227;o Silva" autocomplete="off"></div>
-    <div class="f-group"><div class="f-label">Phone</div><input class="f-input" id="mPhone" type="tel" placeholder="(11) 9 9999-9999"></div>
-    <div class="f-group"><div class="f-label">Description</div><input class="f-input" id="mDesc" placeholder="install bathroom faucet" autocomplete="off"></div>
-    <div class="f-group"><div class="f-label">Date</div><input class="f-input" id="mDate" type="date"></div>
-    <div class="f-group">
-      <div class="f-label">Time</div>
-      <div class="time-row">
-        <input class="f-input" id="mStart" type="time" value="08:00">
-        <span class="time-sep">&#8594;</span>
-        <input class="f-input" id="mEnd" type="time" value="10:00">
-      </div>
-    </div>
-    <div class="modal-actions">
-      <button class="modal-cancel" onclick="closeModal()">cancel</button>
-      <button class="modal-save" id="modalSaveBtn" onclick="saveModal()">save event</button>
-    </div>
-    <button class="modal-del-btn" id="modalDelBtn" onclick="deleteFromModal()">delete this event</button>
-  </div>
-</div>
-
-<!-- DONE WALL (black) -->
-<div class="world-wall world-done" id="doneWall">
-  <div class="wall-header">
-    <div class="wall-world-name">Done</div>
-    <div class="wall-right">
-      <span class="wall-count" id="dwCount"></span>
-      <button class="wall-close" onclick="closeDoneWall()">&#x2715;</button>
-    </div>
-  </div>
-  <div class="dw-track" id="dwTrack"></div>
-  <div class="dw-dots" id="dwDots"></div>
-  <!-- quick add bar -->
-  <div class="dw-add-bar">
-    <input class="dw-add-inp" id="dwAddInp" placeholder="what did you finish&#8230;" autocomplete="off">
-    <button class="dw-add-btn" onclick="dwQuickAdd()">&#43;</button>
-  </div>
-</div>
-
-<!-- DONE MINI MODAL -->
-<div class="dw-modal-overlay" id="dwModalOverlay" onclick="dwCloseMiniModal(event)">
-  <div class="dw-mini-modal">
-    <div class="dw-mm-handle"></div>
-    <div class="dw-mm-title">Add to Done</div>
-    <div class="dw-mm-group">
-      <div class="dw-mm-label">Job / Client</div>
-      <input class="dw-mm-inp" id="dwMmName" placeholder="bathroom faucet — João" autocomplete="off">
-    </div>
-    <div class="dw-mm-group">
-      <div class="dw-mm-label">Notes</div>
-      <input class="dw-mm-inp" id="dwMmDesc" placeholder="replaced pipes, took 3h" autocomplete="off">
-    </div>
-    <div class="dw-mm-group">
-      <div class="dw-mm-label">Date done</div>
-      <input class="dw-mm-inp" id="dwMmDate" type="date">
-    </div>
-    <button class="dw-mm-save" onclick="dwSaveLog()">save to done</button>
-  </div>
-</div>
-
-<!-- QUEUE WALL (orange) -->
-<div class="world-wall world-queue" id="queueWall">
-  <div class="wall-header">
-    <div class="wall-world-name">Queue</div>
-    <div class="wall-right">
-      <span class="wall-count" id="queueCount"></span>
-      <button class="wall-close" onclick="closeQueueWall()">&#x2715;</button>
-    </div>
-  </div>
-  <div class="ql-body" id="queueBody"></div>
-  <div class="ql-add">
-    <input class="ql-inp" id="queueInp" placeholder="add to queue&#8230;" autocomplete="off">
-    <button class="ql-btn" onclick="queueQuickAdd()">&#43;</button>
-  </div>
-</div>
-
-<!-- LATER / CLIENTS WALL (pink) -->
-<div class="world-wall world-later" id="laterWall">
-  <div class="wall-header">
-    <div class="wall-world-name">Clients</div>
-    <div class="wall-right">
-      <span class="wall-count" id="laterCount"></span>
-      <button class="wall-close" onclick="closeLaterWall()">&#x2715;</button>
-    </div>
-  </div>
-  <div class="ql-body" id="laterBody"></div>
-  <div class="ql-add">
-    <input class="ql-inp" id="laterInp" placeholder="new client name&#8230;" autocomplete="off">
-    <button class="ql-btn" onclick="laterQuickAdd()">&#43;</button>
-  </div>
-</div>
-
-<!-- SIDE TABS -->
-<div class="side-tabs">
-  <div class="side-tab side-tab-done" onclick="openDoneWall()">
-    <span class="side-tab-badge" id="doneBadge"></span>
-    <span class="side-tab-lbl">done</span>
-  </div>
-  <div class="side-tab side-tab-queue" onclick="openQueueWall()">
-    <span class="side-tab-badge" id="queueBadge"></span>
-    <span class="side-tab-lbl">queue</span>
-  </div>
-  <div class="side-tab side-tab-later" onclick="openLaterWall()">
-    <span class="side-tab-badge" id="laterBadge"></span>
-    <span class="side-tab-lbl">clients</span>
-  </div>
-</div>
-
-<!-- BOTTOM NAV -->
-<nav class="bottom-nav">
-  <button class="bnav active" id="bnav-cal" onclick="showPanel('cal')">
-    <span class="bnav-lbl">calendar</span>
-  </button>
-  <button class="bnav" id="bnav-tl" onclick="showPanel('tl')">
-    <span class="bnav-lbl">day</span>
-  </button>
-  <button class="bnav" id="bnav-find" onclick="showPanel('find')">
-    <span class="bnav-lbl">find slot</span>
-  </button>
-</nav>
-
+<body style="margin:0;padding:0;background:#FFF8F0;">
+<div id="root"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.24.7/babel.min.js"></script>
 <script>
-'use strict';
-
-// ── ALL STATE DECLARED FIRST ──
-var events      = JSON.parse(localStorage.getItem('ag6_evts')  || '[]');
-var clients     = JSON.parse(localStorage.getItem('ag6_cl')    || '[]');
-var queueJobs   = JSON.parse(localStorage.getItem('ag6_queue') || '[]');
-var doneLog     = JSON.parse(localStorage.getItem('ag6_done')  || '[]');
-var selDate     = toDS(new Date());
-var calY, calM;
-var mStatus     = 'working';
-var mEvId       = null;
-var slotViewMode= 'day';
-var whGoal      = parseInt(localStorage.getItem('ag6_whgoal') || '8');
-var whTimer     = null;
-var cfEditId    = null;
-
-var MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
-var DNAMES=['Su','Mo','Tu','We','Th','Fr','Sa'];
-var SLOT_S=8,SLOT_E=17,WORK_S=7,WORK_E=20;
-var SC={working:'var(--green)',waiting:'var(--orange)',late:'var(--red)',urgent:'var(--yellow)',personal:'var(--mu)',busy:'var(--ln)'};
-var SL={working:'Working',waiting:'Waiting',late:'Late',urgent:'Urgent',personal:'Personal',busy:'Busy'};
-var BG_CYCLE=['bg-black','bg-white','bg-mango','bg-black','bg-black','bg-white'];
-
-// ── UTILS ──
-function toDS(d){return d.toISOString().split('T')[0];}
-function todayDS(){return toDS(new Date());}
-function persist(){
-  localStorage.setItem('ag6_evts',JSON.stringify(events));
-  localStorage.setItem('ag6_cl',JSON.stringify(clients));
-  localStorage.setItem('ag6_queue',JSON.stringify(queueJobs));
-  localStorage.setItem('ag6_done',JSON.stringify(doneLog));
-}
-function pad(n){return String(n).padStart(2,'0');}
-function toMins(t){var p=t.split(':');return parseInt(p[0])*60+parseInt(p[1]);}
-function fromMins(m){return pad(Math.floor(m/60))+':'+pad(m%60);}
-function minsOf(s,e){return Math.max(0,toMins(e)-toMins(s));}
-function fmt(m){var h=Math.floor(m/60),mn=m%60;return h?(mn?h+'h '+mn+'m':h+'h'):mn+'m';}
-function mkEl(tag,cls){var e=document.createElement(tag);if(cls)e.className=cls;return e;}
-function mkDiv(cls){return mkEl('div',cls);}
-function initials(name){return name.split(' ').map(function(w){return w[0]||'';}).join('').slice(0,2).toUpperCase();}
-function addDays(ds,n){var d=new Date(ds+'T12:00');d.setDate(d.getDate()+n);return toDS(d);}
-
-// ── SPLASH ──
-function dismissSplash(){
-  var sp=document.getElementById('splash');
-  sp.classList.add('hide');
-  setTimeout(function(){sp.style.display='none';},750);
-}
-
-// ── INIT ──
-(function init(){
-  var now=new Date();
-  calY=now.getFullYear();calM=now.getMonth();
-  document.getElementById('todayChip').textContent=now.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
-  document.getElementById('mDate').value=selDate;
-  document.getElementById('whGoalLbl').textContent=whGoal;
-  document.getElementById('queueInp').addEventListener('keydown',function(ev){if(ev.key==='Enter')queueQuickAdd();});
-  document.getElementById('laterInp').addEventListener('keydown',function(ev){if(ev.key==='Enter')laterQuickAdd();});
-  document.getElementById('dwAddInp').addEventListener('keydown',function(ev){if(ev.key==='Enter')dwQuickAdd();});
-  renderAll();
-  startWhTimer();
-  setTimeout(dismissSplash,3000);
-})();
-
-function renderAll(){
-  renderCal();renderDay();renderSummary();
-  renderWorkingHours();updateSideTabs();
-}
-
-// ── PANELS ──
-function showPanel(name){
-  document.querySelectorAll('.panel').forEach(function(p){p.classList.remove('active');});
-  document.getElementById('panel-'+name).classList.add('active');
-  document.querySelectorAll('.bnav').forEach(function(b){b.classList.remove('active');});
-  var nb=document.getElementById('bnav-'+name);if(nb)nb.classList.add('active');
-}
-
-// ── CALENDAR ──
-function chMo(d){calM+=d;if(calM>11){calM=0;calY++;}if(calM<0){calM=11;calY--;}renderCal();}
-
-function renderCal(){
-  document.getElementById('calMonthName').textContent=MONTHS[calM];
-  document.getElementById('calYear').textContent=calY;
-  var grid=document.getElementById('calGrid');grid.innerHTML='';
-  DNAMES.forEach(function(n){var e=mkDiv('cal-dn');e.textContent=n;grid.appendChild(e);});
-  var first=new Date(calY,calM,1).getDay(),last=new Date(calY,calM+1,0).getDate(),today=todayDS();
-  for(var i=0;i<first;i++){var e=mkDiv('cal-d other');e.textContent=new Date(calY,calM,-first+i+1).getDate();grid.appendChild(e);}
-  for(var dd=1;dd<=last;dd++){
-    var ds=calY+'-'+pad(calM+1)+'-'+pad(dd);
-    var e=mkDiv('cal-d');
-    if(ds===today)e.classList.add('is-today');
-    if(ds===selDate)e.classList.add('selected');
-    var num=mkDiv('day-num');num.textContent=dd;e.appendChild(num);
-    var dayEvts=events.filter(function(ev){return ev.date===ds;});
-    if(dayEvts.length){
-      var seen={},seenList=[];
-      dayEvts.forEach(function(ev){
-        if(!seen[ev.status]){seen[ev.status]=1;seenList.push(ev.status);}
-      });
-      e.classList.add('has-events');
-      if(seenList.length===1) e.classList.add('has-1');
-      var pill=mkDiv('day-pill');
-      seenList.forEach(function(status){
-        var seg=mkDiv('day-pill-seg');
-        seg.style.background=SC[status]||'#999';
-        pill.appendChild(seg);
-      });
-      e.appendChild(pill);
-    }
-    (function(ds2){e.onclick=function(){selDate=ds2;document.getElementById('mDate').value=ds2;renderAll();showPanel('tl');};})(ds);
-    grid.appendChild(e);
-  }
-}
-
-function renderSummary(){
-  var dayEvts=events.filter(function(ev){return ev.date===selDate;});
-  var busyMins=dayEvts.reduce(function(acc,ev){return acc+minsOf(ev.start,ev.end);},0);
-  var freeMins=Math.max(0,(WORK_E-WORK_S)*60-busyMins);
-  var d=new Date(selDate+'T12:00');
-  var dateStr=d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
-  var counts={};dayEvts.forEach(function(ev){counts[ev.status]=(counts[ev.status]||0)+1;});
-  var badges=Object.keys(SC).filter(function(s){return counts[s];}).map(function(s){
-    return '<div class="s-badge"><div class="s-sq" style="background:'+SC[s]+'"></div>'+SL[s]+': '+counts[s]+'</div>';
-  }).join('');
-  document.getElementById('daySummary').innerHTML=
-    '<div class="ds-date">'+dateStr.toUpperCase()+'</div>'+
-    '<div class="ds-stats">'+
-    '<div><div class="ds-num">'+dayEvts.length+'</div><div class="ds-lbl">events</div></div>'+
-    '<div><div class="ds-num">'+fmt(freeMins)+'</div><div class="ds-lbl">free</div></div>'+
-    '<div><div class="ds-num">'+fmt(busyMins)+'</div><div class="ds-lbl">booked</div></div></div>'+
-    (badges?'<div class="status-badges">'+badges+'</div>':'<div style="font-size:14px;font-weight:400;color:var(--mu)">no events \u2014 tap a day to view</div>');
-}
-
-// ── WORKING HOURS ──
-function renderWorkingHours(){
-  var today=todayDS(),isToday=selDate===today;
-  document.getElementById('whBox').style.opacity=isToday?'1':'0.42';
-  document.getElementById('whGoalLbl').textContent=whGoal;
-  var now=new Date(),nowMins=now.getHours()*60+now.getMinutes();
-  var dayStart=8*60,dayEnd=dayStart+whGoal*60,totalMins=whGoal*60;
-  var jobEvts=events.filter(function(ev){return ev.date===selDate&&ev.status!=='personal'&&ev.status!=='busy';});
-  var totalBooked=0;
-  jobEvts.forEach(function(ev){
-    var s=Math.max(toMins(ev.start),dayStart),e2=Math.min(toMins(ev.end),dayEnd);
-    if(e2>s)totalBooked+=(e2-s);
-  });
-  var bookedAhead=0;
-  if(isToday){
-    jobEvts.forEach(function(ev){
-      var s=Math.max(toMins(ev.start),nowMins,dayStart),e2=Math.min(toMins(ev.end),dayEnd);
-      if(e2>s)bookedAhead+=(e2-s);
-    });
-  } else {bookedAhead=totalBooked;}
-  var clockLeft=isToday?Math.max(0,dayEnd-nowMins):totalMins;
-  var freeAhead=Math.max(0,clockLeft-bookedAhead);
-  var freeH=Math.floor(freeAhead/60),freeM=freeAhead%60;
-  var display=isToday?(freeAhead<=0?'0':freeH+(freeM?'.'+Math.round(freeM/6):'')):'--';
-  document.getElementById('whHours').textContent=display;
-  var frac=clockLeft>0?freeAhead/clockLeft:0;
-  var cls='wh-great';
-  if(frac<0.5)cls='wh-ok';if(frac<0.2)cls='wh-low';
-  if(!isToday||freeAhead<=0)cls='wh-done';
-  document.getElementById('whHours').className='wh-hours '+cls;
-  var rc=document.getElementById('whRight');
-  if(isToday){
-    var endH=Math.floor(dayEnd/60),endMin=dayEnd%60,ampm=endH>=12?'pm':'am',h12=endH>12?endH-12:endH;
-    rc.innerHTML='<div class="wh-right-row"><div class="wh-rdot" style="background:var(--orange)"></div>'+fmt(bookedAhead)+' booked</div>'+
-      '<div class="wh-right-row" style="color:var(--mu);font-size:13px">done at '+h12+(endMin?':'+pad(endMin):'')+ampm+'</div>';
-  } else {rc.innerHTML='';}
-  var pastPct=isToday?Math.min(100,Math.max(0,(nowMins-dayStart)/totalMins*100)):0;
-  document.getElementById('whBarWrap').innerHTML=
-    '<div class="wh-seg" style="width:'+pastPct+'%;background:var(--g)"></div>'+
-    '<div class="wh-seg" style="width:'+(bookedAhead/totalMins*100)+'%;background:var(--orange)"></div>'+
-    '<div class="wh-seg" style="width:'+(freeAhead/totalMins*100)+'%;background:var(--green)"></div>';
-  document.getElementById('whLegend').innerHTML=isToday?
-    '<div class="wh-leg"><div class="wh-ldot" style="background:var(--green)"></div>free: '+fmt(freeAhead)+'</div>'+
-    '<div class="wh-leg"><div class="wh-ldot" style="background:var(--orange)"></div>booked: '+fmt(bookedAhead)+'</div>':
-    '<div class="wh-leg">viewing another day</div>';
-  document.querySelectorAll('.wh-gbtn').forEach(function(btn){btn.classList.toggle('active',parseInt(btn.dataset.h)===whGoal);});
-}
-function toggleWhPicker(){var p=document.getElementById('whPicker');p.classList.toggle('open');if(p.classList.contains('open'))buildGoalBtns();}
-function buildGoalBtns(){
-  var wrap=document.getElementById('whGoalBtns');wrap.innerHTML='';
-  for(var h=4;h<=12;h++){
-    var btn=mkEl('button','wh-gbtn');btn.textContent=h;btn.dataset.h=h;
-    if(h===whGoal)btn.classList.add('active');
-    (function(hh){btn.onclick=function(){whGoal=hh;localStorage.setItem('ag6_whgoal',hh);document.getElementById('whGoalLbl').textContent=hh;buildGoalBtns();renderWorkingHours();setTimeout(function(){document.getElementById('whPicker').classList.remove('open');},400);};})(h);
-    wrap.appendChild(btn);
-  }
-}
-function startWhTimer(){clearInterval(whTimer);renderWorkingHours();whTimer=setInterval(renderWorkingHours,60000);}
-
-// ── TIMELINE ──
-function shiftDay(dir){
-  var d=new Date(selDate+'T12:00');
-  d.setDate(d.getDate()+dir);
-  selDate=toDS(d);
-  document.getElementById('mDate').value=selDate;
-  renderAll();
-}
-
-function renderDay(){
-  var d=new Date(selDate+'T12:00');
-  document.getElementById('tlWday').textContent=d.toLocaleDateString('en-US',{weekday:'long'}).toUpperCase();
-  document.getElementById('tlDateBig').textContent=d.toLocaleDateString('en-US',{month:'long',day:'numeric'}).toUpperCase();
-  var tl=document.getElementById('timeline');tl.innerHTML='';
-  var dayEvts=events.filter(function(ev){return ev.date===selDate;}).sort(function(a,b){return a.start.localeCompare(b.start);});
-
-  for(var h=WORK_S;h<=WORK_E;h++){
-    var row=mkDiv('t-row');
-    var lbl=mkDiv('t-hour');lbl.textContent=h===12?'12p':h<12?h+'a':(h-12)+'p';row.appendChild(lbl);
-    var content=mkDiv('t-content');
-
-    var hMins=h*60;
-    var hEndMins=(h+1)*60;
-
-    // events starting this hour
-    var starting=dayEvts.filter(function(ev){
-      var sm=toMins(ev.start);
-      return sm>=hMins&&sm<hEndMins;
-    });
-    // events covering this hour (started before, ends after start of this hour)
-    var covering=dayEvts.filter(function(ev){
-      var sm=toMins(ev.start);
-      var em=toMins(ev.end);
-      return sm<hMins&&em>hMins;
-    });
-
-    if(starting.length){
-      starting.forEach(function(ev){content.appendChild(buildEvtCard(ev));});
-      var color=SC[starting[0].status]||'#999';
-      row.style.background=hexToRgba(color,0.14);
-      row.style.borderBottom='1px solid '+hexToRgba(color,0.22);
-    } else if(covering.length){
-      var ev=covering[0];
-      var color=SC[ev.status]||'#999';
-      row.style.background=hexToRgba(color,0.14);
-      row.style.borderBottom='1px solid '+hexToRgba(color,0.2);
-      var cont=mkDiv('t-continuation');
-      cont.style.cssText='font-size:11px;font-weight:400;color:'+hexToRgba(color,0.7)+';letter-spacing:.04em;padding:10px 0;cursor:pointer;';
-      cont.textContent=ev.name;
-      (function(eid){cont.onclick=function(){openModalEdit(eid);};})(ev.id);
-      content.appendChild(cont);
-    } else {
-      var free=mkDiv('t-free');free.textContent='\u2014';
-      (function(hs){free.onclick=function(){openModal(hs);};})(pad(h)+':00');
-      content.appendChild(free);
-    }
-    row.appendChild(content);tl.appendChild(row);
-  }
-
-  // ── SWIPE TO CHANGE DAY ──
-  // Use the panel wrapper so we catch swipes anywhere in day view
-  // Active listeners with preventDefault block the wall-open gesture
-  var tlPanel=document.getElementById('panel-tl');
-  // Remove old listeners by cloning (safe pattern)
-  var fresh=tlPanel.cloneNode(false);
-  while(tlPanel.firstChild) fresh.appendChild(tlPanel.firstChild);
-  tlPanel.parentNode.replaceChild(fresh,tlPanel);
-  // Re-cache after clone
-  document.getElementById('timeline'); // just to confirm DOM
-  var swSx=0,swSy=0,swHoriz=null;
-  fresh.addEventListener('touchstart',function(e){
-    swSx=e.touches[0].clientX;swSy=e.touches[0].clientY;swHoriz=null;
-  },{passive:true});
-  fresh.addEventListener('touchmove',function(e){
-    if(swHoriz!==null) return;
-    var dx=Math.abs(e.touches[0].clientX-swSx);
-    var dy=Math.abs(e.touches[0].clientY-swSy);
-    if(dx<5&&dy<5) return;
-    swHoriz=dx>dy;
-    if(swHoriz&&e.cancelable) e.preventDefault();
-  },{passive:false});
-  fresh.addEventListener('touchend',function(e){
-    if(!swHoriz) return;
-    var dx=e.changedTouches[0].clientX-swSx;
-    if(Math.abs(dx)>44){
-      e.stopImmediatePropagation();
-      shiftDay(dx<0?1:-1);
-    }
-    swHoriz=null;
-  },{passive:false});
-}
-
-// convert CSS var color or hex to rgba
-function hexToRgba(cssVar,alpha){
-  // map our SC values to actual hex
-  var map={
-    'var(--green)':'61,139,94',
-    'var(--orange)':'200,87,26',
-    'var(--red)':'184,60,43',
-    'var(--yellow)':'212,144,10',
-    'var(--mu)':'138,127,116',
-    'var(--ln)':'212,201,188'
-  };
-  var rgb=map[cssVar]||'100,100,100';
-  return 'rgba('+rgb+','+alpha+')';
-}
-function buildEvtCard(ev){
-  var card=mkDiv('evt-card s-'+ev.status);
-  var strip=mkDiv('evt-strip');strip.style.background=SC[ev.status]||'#999';
-  var body=mkDiv('evt-body');
-  var name=mkDiv('evt-name');name.textContent=ev.name;
-  var sub=mkDiv('evt-sub');sub.textContent=[ev.start+' \u2192 '+ev.end,ev.phone,ev.desc].filter(Boolean).join(' \u00b7 ');
-  body.appendChild(name);body.appendChild(sub);
-  (function(eid){body.onclick=function(){openModalEdit(eid);};})(ev.id);
-  var del=mkEl('button','evt-del');del.textContent='\u00d7';
-  (function(eid,en){del.onclick=function(e){e.stopPropagation();if(confirm('Delete "'+en+'"?')){deleteEvt(eid);}};})(ev.id,ev.name);
-  card.appendChild(strip);card.appendChild(body);card.appendChild(del);
-  return card;
-}
-function deleteEvt(id){events=events.filter(function(ev){return ev.id!==id;});persist();renderAll();}
-
-// ── MODAL ──
-function openModal(startTime){
-  startTime=startTime||'';mEvId=null;
-  document.getElementById('modalTitle').textContent='New Event';
-  document.getElementById('modalSub').textContent='';
-  document.getElementById('mName').value='';document.getElementById('mPhone').value='';document.getElementById('mDesc').value='';
-  document.getElementById('mDate').value=selDate;
-  if(startTime){
-    document.getElementById('mStart').value=startTime;
-    var p=startTime.split(':');
-    document.getElementById('mEnd').value=pad(Math.min(parseInt(p[0])+2,WORK_E))+':'+p[1];
-  } else {document.getElementById('mStart').value='08:00';document.getElementById('mEnd').value='10:00';}
-  mStatus='working';
-  document.querySelectorAll('.s-btn').forEach(function(b){b.classList.toggle('active',b.dataset.s==='working');});
-  document.getElementById('modalDelBtn').style.display='none';
-  document.getElementById('modalSaveBtn').textContent='save event';
-  document.getElementById('modalOverlay').classList.add('open');
-  setTimeout(function(){document.getElementById('mName').focus();},250);
-}
-function openModalEdit(evId){
-  var ev=events.find(function(e){return e.id===evId;});if(!ev)return;
-  mEvId=evId;
-  document.getElementById('modalTitle').textContent='Edit Event';
-  document.getElementById('modalSub').textContent='tap save to update \u00b7 or delete below';
-  document.getElementById('mName').value=ev.name;document.getElementById('mPhone').value=ev.phone||'';document.getElementById('mDesc').value=ev.desc||'';
-  document.getElementById('mDate').value=ev.date;document.getElementById('mStart').value=ev.start;document.getElementById('mEnd').value=ev.end;
-  mStatus=ev.status;
-  document.querySelectorAll('.s-btn').forEach(function(b){b.classList.toggle('active',b.dataset.s===ev.status);});
-  document.getElementById('modalDelBtn').style.display='block';
-  document.getElementById('modalSaveBtn').textContent='update event';
-  document.getElementById('modalOverlay').classList.add('open');
-}
-function closeModal(){document.getElementById('modalOverlay').classList.remove('open');mEvId=null;}
-function closeBg(evt){if(evt.target===document.getElementById('modalOverlay'))closeModal();}
-function setMS(s,btn){mStatus=s;document.querySelectorAll('.s-btn').forEach(function(b){b.classList.toggle('active',b===btn);});}
-function deleteFromModal(){
-  if(!mEvId)return;var ev=events.find(function(e){return e.id===mEvId;});
-  if(ev&&confirm('Delete "'+ev.name+'"?')){deleteEvt(mEvId);closeModal();}
-}
-function saveModal(){
-  var nameEl=document.getElementById('mName'),name=nameEl.value.trim();
-  if(!name){nameEl.classList.add('err');nameEl.focus();return;}
-  nameEl.classList.remove('err');
-  var fields={status:mStatus,name:name,phone:document.getElementById('mPhone').value.trim(),desc:document.getElementById('mDesc').value.trim(),date:document.getElementById('mDate').value,start:document.getElementById('mStart').value,end:document.getElementById('mEnd').value};
-  if(mEvId){var idx=events.findIndex(function(e){return e.id===mEvId;});if(idx>-1)events[idx]=Object.assign({},events[idx],fields);}
-  else{events.push(Object.assign({id:Date.now()+''},fields));}
-  selDate=document.getElementById('mDate').value;
-  persist();closeModal();renderAll();showPanel('tl');
-}
-
-// ── FIND SLOTS ──
-function setSlotView(mode,btn){slotViewMode=mode;document.querySelectorAll('.vt-btn').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');}
-function freeSlotsForDay(ds,need){
-  var busy=events.filter(function(ev){return ev.date===ds;}).map(function(ev){return{s:toMins(ev.start),e:toMins(ev.end)};}).sort(function(a,b){return a.s-b.s;});
-  var slots=[],cur=SLOT_S*60,end=SLOT_E*60;
-  busy.forEach(function(b){var bs=Math.max(b.s,SLOT_S*60),be=Math.min(b.e,SLOT_E*60);if(bs>cur&&bs-cur>=need)slots.push({s:cur,e:bs});cur=Math.max(cur,be);});
-  if(end-cur>=need)slots.push({s:cur,e:end});return slots;
-}
-function findSlots(){
-  var h=parseInt(document.getElementById('durH').value)||0,m=parseInt(document.getElementById('durM').value)||0,need=h*60+m;
-  var list=document.getElementById('slotsList');list.innerHTML='';
-  if(!need){list.innerHTML='<div class="no-slots">enter a duration first</div>';return;}
-  var today=todayDS(),dates=[];
-  if(slotViewMode==='day'){dates=[selDate];}
-  else if(slotViewMode==='week'){for(var i=0;i<7;i++)dates.push(addDays(today,i));}
-  else{var base=new Date(today+'T12:00'),dl=new Date(base.getFullYear(),base.getMonth()+1,0).getDate()-base.getDate()+1;for(var i=0;i<dl;i++)dates.push(addDays(today,i));}
-  var found=0;
-  dates.forEach(function(ds){
-    var slots=freeSlotsForDay(ds,need);if(!slots.length)return;found++;
-    var d=new Date(ds+'T12:00'),label=ds===today?'Today':d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
-    var hdr=mkDiv('slot-day-header');hdr.textContent=label.toUpperCase();list.appendChild(hdr);
-    slots.forEach(function(sl){
-      var sStr=fromMins(sl.s),eStr=fromMins(sl.e);
-      var row=mkDiv('slot-row-sm');row.innerHTML='<span>'+sStr+' \u2192 '+eStr+'</span><span class="slot-free">'+fmt(sl.e-sl.s)+' free</span>';
-      (function(ds2,s2,e2){row.onclick=function(){selDate=ds2;document.getElementById('mDate').value=ds2;renderAll();openModal(s2);document.getElementById('mEnd').value=e2;showPanel('tl');document.getElementById('modalOverlay').classList.add('open');};})(ds,sStr,eStr);
-      list.appendChild(row);
-    });
-  });
-  if(!found){var msg=mkDiv('no-slots');msg.textContent='no free slots found in that period';list.appendChild(msg);}
-}
-
-// ── DONE WALL ──
-function getDoneEvents(){
-  var now=new Date(),nowMins=now.getHours()*60+now.getMinutes(),today=todayDS();
-  // auto: past events from calendar
-  var auto=events.filter(function(ev){
-    if(ev.status==='personal'||ev.status==='busy')return false;
-    if(ev.date<today)return true;
-    if(ev.date===today&&toMins(ev.end)<=nowMins)return true;
-    return ev.status==='done';
-  });
-  // manual: items added directly to done log
-  var manual=doneLog.map(function(d){
-    return {id:d.id,name:d.name,desc:d.desc||'',date:d.date,start:'',end:'',phone:'',status:'done',isLog:true};
-  });
-  var all=auto.concat(manual);
-  return all.sort(function(a,b){return a.date!==b.date?b.date.localeCompare(a.date):b.start.localeCompare(a.start);});
-}
-
-function openDoneWall(){renderDoneWall();document.getElementById('doneWall').classList.add('open');document.body.style.overflow='hidden';}
-function closeDoneWall(){document.getElementById('doneWall').classList.remove('open');document.body.style.overflow='';}
-
-function renderDoneWall(){
-  var done=getDoneEvents(),track=document.getElementById('dwTrack'),dots=document.getElementById('dwDots');
-  track.innerHTML='';dots.innerHTML='';
-  document.getElementById('dwCount').textContent=done.length?done.length+' job'+(done.length>1?'s':''):'';
-  if(!done.length){
-    var empty=mkDiv('dw-empty');
-    empty.innerHTML='<div class="dw-empty-big">ZERO</div><div class="dw-empty-msg">nothing done yet<br>add one below ↓</div>';
-    track.appendChild(empty);return;
-  }
-  done.forEach(function(ev,i){
-    var bg=BG_CYCLE[i%BG_CYCLE.length],card=mkDiv('dw-card '+bg);
-    var ghost=mkDiv('dw-num');ghost.textContent=pad(i+1);card.appendChild(ghost);
-    var top=mkDiv('dw-top');
-    var tag=mkDiv('dw-tag');tag.textContent=ev.isLog?'manual':'completed';
-    var dateEl=mkDiv('dw-date-lbl');
-    try{dateEl.textContent=new Date(ev.date+'T12:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}).toUpperCase();}catch(e){dateEl.textContent=ev.date;}
-    top.appendChild(tag);top.appendChild(dateEl);card.appendChild(top);
-    var body=mkDiv('dw-body');
-    var cl=mkDiv('dw-client');cl.textContent=ev.name;body.appendChild(cl);
-    if(ev.desc){var dsc=mkDiv('dw-desc');dsc.textContent=ev.desc;body.appendChild(dsc);}
-    var pills=mkDiv('dw-pills');
-    if(ev.start&&ev.end&&ev.start!==ev.end){var p=mkDiv('dw-pill');p.textContent=ev.start+' \u2013 '+ev.end;pills.appendChild(p);}
-    if(ev.phone){var p2=mkDiv('dw-pill');p2.textContent=ev.phone;pills.appendChild(p2);}
-    var dur=ev.start&&ev.end?minsOf(ev.start,ev.end):0;
-    if(dur>0){var p3=mkDiv('dw-pill');p3.textContent=fmt(dur);pills.appendChild(p3);}
-    if(ev.isLog){
-      // delete manual log entry
-      var del=mkEl('button','dw-pill');del.textContent='remove';del.style.cssText='cursor:pointer;opacity:.5;';
-      (function(eid){del.onclick=function(){doneLog=doneLog.filter(function(d){return d.id!==eid;});persist();renderDoneWall();updateSideTabs();};})(ev.id);
-      pills.appendChild(del);
-    }
-    body.appendChild(pills);card.appendChild(body);track.appendChild(card);
-    var dot=mkDiv('dw-dot'+(i===0?' active':''));dots.appendChild(dot);
-  });
-  track.onscroll=function(){var idx=Math.round(track.scrollLeft/track.offsetWidth);dots.querySelectorAll('.dw-dot').forEach(function(d,i){d.classList.toggle('active',i===idx);});};
-}
-
-// quick add — opens mini modal pre-filled with name
-function dwQuickAdd(){
-  var inp=document.getElementById('dwAddInp');
-  var name=inp.value.trim();
-  inp.value='';
-  dwOpenMiniModal(name);
-}
-
-function dwOpenMiniModal(prefill){
-  document.getElementById('dwMmName').value=prefill||'';
-  document.getElementById('dwMmDesc').value='';
-  document.getElementById('dwMmDate').value=todayDS();
-  document.getElementById('dwModalOverlay').classList.add('open');
   setTimeout(function(){
-    var el=document.getElementById(prefill?'dwMmDesc':'dwMmName');
-    if(el)el.focus();
-  },250);
-}
-
-function dwCloseMiniModal(evt){
-  if(!evt||evt.target===document.getElementById('dwModalOverlay'))
-    document.getElementById('dwModalOverlay').classList.remove('open');
-}
-
-function dwSaveLog(){
-  var name=document.getElementById('dwMmName').value.trim();
-  if(!name){document.getElementById('dwMmName').style.borderBottomColor='rgba(255,100,100,.6)';return;}
-  document.getElementById('dwMmName').style.borderBottomColor='';
-  doneLog.push({
-    id:Date.now()+'',
-    name:name,
-    desc:document.getElementById('dwMmDesc').value.trim(),
-    date:document.getElementById('dwMmDate').value||todayDS()
-  });
-  persist();
-  document.getElementById('dwModalOverlay').classList.remove('open');
-  renderDoneWall();
-  updateSideTabs();
-}
-
-// ── QUEUE WALL (orange) ──
-function openQueueWall(){renderQueueWall();document.getElementById('queueWall').classList.add('open');document.body.style.overflow='hidden';}
-function closeQueueWall(){document.getElementById('queueWall').classList.remove('open');document.body.style.overflow='';}
-function renderQueueWall(){
-  var body=document.getElementById('queueBody');
-  var pending=queueJobs.filter(function(j){return !j.done;}).length;
-  document.getElementById('queueCount').textContent=pending?pending+' pending':'all done';
-  body.innerHTML='';
-  if(!queueJobs.length){body.innerHTML='<div class="ql-empty">no jobs in queue<br>add one below</div>';return;}
-  var sorted=queueJobs.filter(function(j){return !j.done;}).concat(queueJobs.filter(function(j){return j.done;}));
-  sorted.forEach(function(j,i){
-    var row=mkDiv('ql-row'+(j.done?' ql-faded':''));
-    var num=mkDiv('ql-num');num.textContent=pad(i+1);
-    var info=mkDiv('ql-info');
-    var nm=mkDiv('ql-name');nm.textContent=j.name;
-    var meta=mkDiv('ql-meta');meta.textContent=[j.phone,j.done?'done \u2713':''].filter(Boolean).join(' \u00b7 ');
-    info.appendChild(nm);if(meta.textContent)info.appendChild(meta);
-    var arr=mkDiv('ql-arr');arr.textContent='\u203a';
-    row.appendChild(num);row.appendChild(info);row.appendChild(arr);
-    (function(jid){row.onclick=function(){closeQueueWall();var jb=queueJobs.find(function(x){return x.id===jid;});if(!jb)return;openModal();document.getElementById('mName').value=jb.name;document.getElementById('mPhone').value=jb.phone||'';showPanel('tl');document.getElementById('modalOverlay').classList.add('open');};})(j.id);
-    body.appendChild(row);
-  });
-}
-function queueQuickAdd(){
-  var inp=document.getElementById('queueInp'),name=inp.value.trim();if(!name)return;
-  queueJobs.push({id:Date.now()+'',name:name,phone:'',done:false});
-  inp.value='';persist();renderQueueWall();updateSideTabs();
-}
-
-// ── CLIENTS WALL (pink / later) ──
-function openLaterWall(){renderLaterWall();document.getElementById('laterWall').classList.add('open');document.body.style.overflow='hidden';}
-function closeLaterWall(){document.getElementById('laterWall').classList.remove('open');document.body.style.overflow='';}
-function renderLaterWall(){
-  var body=document.getElementById('laterBody');
-  document.getElementById('laterCount').textContent=clients.length?clients.length+' client'+(clients.length!==1?'s':''):'empty';
-  body.innerHTML='';
-  if(!clients.length){body.innerHTML='<div class="ql-empty">no clients yet<br>add one below</div>';return;}
-  var sorted=[].concat(clients).sort(function(a,b){return a.name.localeCompare(b.name);});
-  sorted.forEach(function(c,i){
-    var row=mkDiv('ql-row');
-    var av=mkDiv('ql-avatar');av.textContent=initials(c.name);
-    var info=mkDiv('ql-info');
-    var nm=mkDiv('ql-name');nm.textContent=c.name;
-    var meta=mkDiv('ql-meta');meta.textContent=[c.phone,c.job,c.ref?'via '+c.ref:''].filter(Boolean).join(' \u00b7 ');
-    info.appendChild(nm);if(meta.textContent)info.appendChild(meta);
-    var arr=mkDiv('ql-arr');arr.textContent='\u203a';
-    row.appendChild(av);row.appendChild(info);row.appendChild(arr);
-    (function(cid){row.onclick=function(){openClientEdit(cid);};})(c.id);
-    body.appendChild(row);
-  });
-}
-function laterQuickAdd(){
-  var inp=document.getElementById('laterInp'),name=inp.value.trim();if(!name)return;
-  clients.push({id:Date.now()+'',name:name,phone:'',job:'',ref:'',notes:''});
-  inp.value='';persist();renderLaterWall();updateSideTabs();
-}
-function openClientEdit(id){
-  var c=clients.find(function(x){return x.id===id;});if(!c)return;
-  cfEditId=id;
-  // reuse modal for quick edit
-  document.getElementById('modalTitle').textContent='Client';
-  document.getElementById('modalSub').textContent=c.ref?'via '+c.ref:'';
-  document.getElementById('mName').value=c.name;
-  document.getElementById('mPhone').value=c.phone||'';
-  document.getElementById('mDesc').value=[c.job,c.notes].filter(Boolean).join(' \u00b7 ');
-  document.getElementById('mDate').value=selDate;
-  document.getElementById('mStart').value='08:00';document.getElementById('mEnd').value='10:00';
-  mStatus='working';
-  document.querySelectorAll('.s-btn').forEach(function(b){b.classList.toggle('active',b.dataset.s==='working');});
-  document.getElementById('modalDelBtn').style.display='block';
-  document.getElementById('modalSaveBtn').textContent='book this client';
-  document.getElementById('modalOverlay').classList.add('open');
-}
-
-function updateSideTabs(){
-  var done=getDoneEvents();
-  var db=document.getElementById('doneBadge');db.style.display=done.length?'flex':'none';db.textContent=done.length;
-  var qPending=queueJobs.filter(function(j){return !j.done;}).length;
-  var qb=document.getElementById('queueBadge');qb.style.display=qPending?'flex':'none';qb.textContent=qPending;
-  var lb=document.getElementById('laterBadge');lb.style.display=clients.length?'flex':'none';lb.textContent=clients.length;
-}
-
-// swipe left to open done wall — only when NOT on day panel
-(function(){
-  var sx=0,sy=0;
-  document.addEventListener('touchstart',function(e){sx=e.touches[0].clientX;sy=e.touches[0].clientY;},{passive:true});
-  document.addEventListener('touchend',function(e){
-    if(document.querySelector('.world-wall.open'))return;
-    if(document.getElementById('panel-tl').classList.contains('active'))return;
-    var dx=e.changedTouches[0].clientX-sx,dy=e.changedTouches[0].clientY-sy;
-    if(dx<-80&&Math.abs(dy)<60&&sx>window.innerWidth*0.4)openDoneWall();
-  },{passive:true});
-})();
-// ── PWA NOTIFICATIONS ──
-var notifPermission = localStorage.getItem('ag6_notif') || 'default';
-
-function initNotifications(){
-  if(!('Notification' in window)) return;
-  if(Notification.permission === 'granted'){
-    notifPermission = 'granted';
-    localStorage.setItem('ag6_notif','granted');
-    scheduleAllNotifications();
-  }
-  updateNotifBtn();
-}
-
-function requestNotifPermission(){
-  if(!('Notification' in window)){
-    alert('Your browser does not support notifications.');
-    return;
-  }
-  Notification.requestPermission().then(function(result){
-    notifPermission = result;
-    localStorage.setItem('ag6_notif', result);
-    if(result === 'granted'){
-      scheduleAllNotifications();
-      showNotifBadge(false);
-      // send a welcome notification
-      new Notification('agenda', {
-        body: 'Notifications are on. You\'ll be reminded 15 min before each job.',
-        icon: 'icon-192.png',
-        badge: 'icon-192.png'
-      });
+    var root = document.getElementById("root");
+    if (root && root.innerHTML.trim() === "") {
+      root.innerHTML = '<div style="padding:40px 20px;text-align:center;font-family:sans-serif;color:#999;"><div style="font-size:40px;margin-bottom:10px;">⚠️</div><div style="font-weight:700;font-size:16px;color:#666;">Having trouble loading.</div><div style="font-size:13px;margin-top:6px;">Check your internet connection and refresh the page.</div></div>';
     }
-  });
+  }, 8000);
+</script>
+<script type="text/babel">
+const { useState, useEffect, useRef } = React;
+
+const STORAGE_KEY = "lumila-app-v2";
+
+const DEFAULT_KIDS = [];
+
+const KID_COLORS = [
+  { color:"#7C5CFC", light:"#EDE8FF" },
+  { color:"#FF6B6B", light:"#FFE8E8" },
+  { color:"#2196F3", light:"#E3F2FD" },
+  { color:"#4CAF50", light:"#E8F5E9" },
+  { color:"#FF9800", light:"#FFF3E0" },
+  { color:"#E91E63", light:"#FCE4EC" },
+  { color:"#009688", light:"#E0F2F1" },
+  { color:"#FFC107", light:"#FFFDE7" },
+  { color:"#F44336", light:"#FFEBEE" },
+  { color:"#9C27B0", light:"#F3E5F5" },
+];
+
+const KID_EMOJIS = ["🌙","⭐","🦋","🌸","🐬","🦄","🐯","🦊","🐼","🌈","🍀","🎀","🚀","🎸","⚡","🌺","🐉","🎯","🏆","💎"];
+
+const BASE_TASKS = [
+  { id:"seatbelt", label:"Seat Belt",   icon:"🔒", earns:1.00, special:true },
+  { id:"homework", label:"Homework",    icon:"📚", earns:0 },
+  { id:"bed",      label:"Made Bed",    icon:"🛏️", earns:0 },
+  { id:"teeth",    label:"Brush Teeth", icon:"🦷", earns:0 },
+  { id:"shower",   label:"Shower",      icon:"🚿", earns:0 },
+  { id:"room",     label:"Clean Room",  icon:"🧹", earns:0 },
+];
+
+const DEFAULT_VACATION_TASKS = [
+  { id:"vbeach",  label:"Beach",        icon:"🏖️" },
+  { id:"vriver",  label:"River",        icon:"🏊" },
+  { id:"vcoco",   label:"Eat Coco",     icon:"🥥" },
+  { id:"vlimber", label:"Eat Limber",   icon:"🍧" },
+  { id:"vlaugh",  label:"Laugh a Lot",  icon:"😂" },
+  { id:"vexplore",label:"Explore",      icon:"🌴" },
+];
+
+const VACATION_ICONS = ["🏖️","🏊","🥥","🍧","😂","🌴","🌊","🐚","🦀","🐠","🍹","⛵","🎣","🏄","🌅","🎆","🎡","🎢","🛵","📸","🍦","🥗","🎵","💃","🌺","🐢","🦋","🌈","🎭","🏝️"];
+
+const EXTRA_TASKS = [
+  { id:"dishes",    label:"Wash Dishes",       icon:"🍽️", hint:"Great starter chore" },
+  { id:"table",     label:"Set the Table",     icon:"🍴", hint:"Before every dinner" },
+  { id:"pets",      label:"Feed the Pets",     icon:"🐾", hint:"Every morning" },
+  { id:"plants",    label:"Water Plants",      icon:"🌱", hint:"3x a week" },
+  { id:"trash",     label:"Take Out Trash",    icon:"🗑️", hint:"When it's full" },
+  { id:"vacuum",    label:"Vacuum",            icon:"🧽", hint:"Once a week" },
+  { id:"dog",       label:"Bath the Dog",      icon:"🐕", hint:"When needed" },
+  { id:"laundry",   label:"Do Laundry",        icon:"👕", hint:"Older kids" },
+  { id:"cooking",   label:"Help Cook",         icon:"👩‍🍳", hint:"Supervised" },
+  { id:"groceries", label:"Pack Groceries",    icon:"🛒", hint:"After shopping" },
+  { id:"mop",       label:"Mop the Floor",     icon:"🪣", hint:"Older kids" },
+  { id:"windows",   label:"Clean Windows",     icon:"🪟", hint:"Monthly" },
+  { id:"lunch",     label:"Pack School Lunch", icon:"🥪", hint:"Night before" },
+  { id:"backpack",  label:"Pack Backpack",     icon:"🎒", hint:"Night before school" },
+  { id:"exercise",  label:"Exercise / Walk",   icon:"🏃", hint:"Stay active" },
+  { id:"reading",   label:"Read 20 min",       icon:"📖", hint:"Before bed" },
+];
+
+const BONUS_AMOUNT = 20;
+const WEEK_DAYS = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+const CONFETTI_COLORS = ["#FF6B6B","#FFD700","#7C5CFC","#4CAF50","#00BCD4","#FF9800","#E91E63","#00E5FF","#76FF03","#FF1744","#651FFF","#FFEA00","#1DE9B6","#FF6D00"];
+const CONFETTI_SHAPES = ["■","●","▲","★","◆"];
+const PIECES = Array.from({length:80},(_,i)=>({ id:i, left:Math.random()*100, shape:CONFETTI_SHAPES[i%5], color:CONFETTI_COLORS[i%CONFETTI_COLORS.length], size:10+Math.random()*18, dur:1.2+Math.random()*2, delay:Math.random()*0.8, drift:(Math.random()-.5)*120, spin:Math.random()>.5?360:-360 }));
+const BURSTS = Array.from({length:6},(_,i)=>({ id:i, x:10+(i%3)*35+Math.random()*15, y:10+Math.floor(i/3)*40+Math.random()*15, color:CONFETTI_COLORS[i%CONFETTI_COLORS.length], delay:i*0.15 }));
+
+function getTodayKey(){
+  const d=new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function getWeekKey(ds){ const d=new Date((ds||getTodayKey())+"T12:00:00"),m=new Date(d); m.setDate(d.getDate()-((d.getDay()+6)%7)); return m.toISOString().split("T")[0]; }
+function getWeekDays(wk){ const m=new Date(wk+"T12:00:00"); return Array.from({length:7},(_,i)=>{ const d=new Date(m); d.setDate(m.getDate()+i); return d.toISOString().split("T")[0]; }); }
+function formatDate(ds){ return new Date(ds+"T12:00:00").toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"}); }
+function formatWeekRange(wk){ const d=getWeekDays(wk),f=x=>new Date(x+"T12:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric"}); return `${f(d[0])} – ${f(d[6])}`; }
+function getWeekScore(gd,wk,tasks){ const today=getTodayKey(),pd=getWeekDays(wk).filter(d=>d<=today); if(!pd.length) return {pct:0}; let dn=0,tot=0; pd.forEach(d=>{ const dd=gd?.[d]||{}; tasks.forEach(t=>{ tot++; if(dd[t.id]) dn++; }); }); return {pct:tot?Math.round((dn/tot)*100):0}; }
+function getStars(p){ if(p>=90)return 5; if(p>=75)return 4; if(p>=60)return 3; if(p>=40)return 2; if(p>=20)return 1; return 0; }
+function mkId(){ return "k_"+Date.now()+"_"+Math.random().toString(36).slice(2,6); }
+
+function loadData(){
+  try{ const s=localStorage.getItem(STORAGE_KEY); if(s){ const d=JSON.parse(s); if(!d.kids||!d.kids.length) d.kids=DEFAULT_KIDS; return d; } } catch{}
+  return { kids:DEFAULT_KIDS, days:{}, bonuses:[], unlocked:{}, customTasks:[] };
+}
+function saveData(d){ try{ localStorage.setItem(STORAGE_KEY,JSON.stringify(d)); }catch{} }
+
+// ── Celebration ──
+function Celebration({kid,onDone}){
+  const [phase,setPhase]=useState("in");
+  useEffect(()=>{ const t1=setTimeout(()=>setPhase("hold"),300),t2=setTimeout(()=>setPhase("out"),3800),t3=setTimeout(onDone,4400); return ()=>{ clearTimeout(t1);clearTimeout(t2);clearTimeout(t3); }; },[]);
+  return (
+    <div onClick={onDone} style={{position:"fixed",inset:0,zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",background:phase==="out"?"rgba(0,0,0,0)":"rgba(10,5,30,.93)",transition:"background .5s",cursor:"pointer",overflow:"hidden"}}>
+      <style>{`
+        @keyframes cFall{0%{transform:translateY(var(--sy)) rotate(0);opacity:1}80%{opacity:1}100%{transform:translateY(110vh) translateX(var(--dr)) rotate(var(--sp));opacity:0}}
+        @keyframes fBurst{0%{transform:scale(0);opacity:1}60%{transform:scale(1.2);opacity:1}100%{transform:scale(2);opacity:0}}
+        @keyframes heroIn{0%{transform:scale(.2) rotate(-10deg);opacity:0}60%{transform:scale(1.15) rotate(3deg);opacity:1}80%{transform:scale(.95)}100%{transform:scale(1);opacity:1}}
+        @keyframes eFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-14px)}}
+        @keyframes rSpin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+        @keyframes sPop{0%{transform:scale(0);opacity:0}50%{transform:scale(1.3);opacity:1}100%{transform:scale(1);opacity:1}}
+        @keyframes fOut{to{opacity:0;transform:scale(.9)}}
+      `}</style>
+      {PIECES.map(p=><div key={p.id} style={{position:"absolute",left:`${p.left}%`,top:0,fontSize:p.size,color:p.color,"--sy":"-20px","--dr":`${p.drift}px`,"--sp":`${p.spin}deg`,animation:`cFall ${p.dur}s ease-in forwards`,animationDelay:`${p.delay}s`,pointerEvents:"none",zIndex:1001}}>{p.shape}</div>)}
+      {BURSTS.map(b=><div key={b.id} style={{position:"absolute",left:`${b.x}%`,top:`${b.y}%`,width:80,height:80,borderRadius:"50%",background:`radial-gradient(circle,${b.color} 0%,transparent 70%)`,animation:`fBurst .9s ease-out forwards`,animationDelay:`${b.delay}s`,pointerEvents:"none",zIndex:1001}}/>)}
+      <div style={{position:"absolute",width:300,height:300,borderRadius:"50%",opacity:.15,background:`conic-gradient(${CONFETTI_COLORS.join(",")})`,animation:"rSpin 4s linear infinite",zIndex:1001}}/>
+      <div style={{position:"relative",zIndex:1002,textAlign:"center",animation:phase==="out"?"fOut .5s forwards":"heroIn .6s cubic-bezier(.34,1.56,.64,1) forwards"}}>
+        <div style={{fontSize:96,animation:"eFloat 2s ease-in-out infinite",filter:`drop-shadow(0 0 20px ${kid.color})`,marginBottom:8}}>{kid.emoji}</div>
+        <div style={{fontFamily:"'Fredoka One'",fontSize:48,background:"linear-gradient(135deg,#FFD700,#FF6B6B,#7C5CFC,#00E5FF)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",lineHeight:1,marginBottom:6}}>PERFECT DAY!</div>
+        <div style={{fontFamily:"'Fredoka One'",fontSize:32,color:kid.color,marginBottom:12,filter:`drop-shadow(0 0 12px ${kid.color})`}}>{kid.name} 🎉</div>
+        <div style={{display:"flex",justifyContent:"center",gap:6,marginBottom:20}}>
+          {[0,1,2,3,4].map(i=><div key={i} style={{fontSize:28,animation:`sPop .4s cubic-bezier(.34,1.56,.64,1) forwards`,animationDelay:`${.3+i*.08}s`,opacity:0}}>⭐</div>)}
+        </div>
+        <div style={{color:"rgba(255,255,255,.4)",fontSize:12,fontWeight:700,letterSpacing:1}}>TAP TO CLOSE</div>
+      </div>
+    </div>
+  );
 }
 
-function scheduleAllNotifications(){
-  if(notifPermission !== 'granted') return;
-  // clear old timers
-  if(window._notifTimers){
-    window._notifTimers.forEach(function(t){clearTimeout(t);});
+function CoinBurst({active}){
+  if(!active) return null;
+  return <div style={{position:"fixed",inset:0,pointerEvents:"none",zIndex:999}}>
+    {[...Array(24)].map((_,i)=><div key={i} style={{position:"absolute",left:`${15+Math.random()*70}%`,top:`${10+Math.random()*50}%`,fontSize:`${18+Math.random()*20}px`,animation:`coinFall ${.8+Math.random()*.8}s ease-out forwards`,animationDelay:`${Math.random()*.3}s`}}>{Math.random()>.5?"💰":"⭐"}</div>)}
+  </div>;
+}
+
+// ── Kid Form (add/edit) ──
+const REWARD_OPTIONS = [1, 2, 5, 10];
+
+function KidForm({kid, onSave, onCancel, onDelete}){
+  const [name,setName]=useState(kid?.name||"");
+  const [emoji,setEmoji]=useState(kid?.emoji||"🌙");
+  const [colorIdx,setColorIdx]=useState(kid ? KID_COLORS.findIndex(c=>c.color===kid.color) : 0);
+  const [reward,setReward]=useState(kid?.reward||1);
+  const chosen = KID_COLORS[colorIdx>=0?colorIdx:0];
+  const isEdit = !!kid;
+  return (
+    <div className="overlay" onClick={onCancel}>
+      <div onClick={e=>e.stopPropagation()} style={{background:"white",borderRadius:28,padding:"28px 22px",maxWidth:340,width:"100%",boxShadow:"0 20px 60px rgba(0,0,0,.25)",animation:"popIn .25s ease",maxHeight:"90vh",overflowY:"auto"}}>
+        {/* Preview */}
+        <div style={{textAlign:"center",marginBottom:20}}>
+          <div style={{width:72,height:72,borderRadius:20,background:chosen.color,display:"inline-flex",alignItems:"center",justifyContent:"center",fontSize:40,boxShadow:`0 6px 20px ${chosen.color}55`,marginBottom:8}}>{emoji}</div>
+          <div style={{fontFamily:"'Fredoka One'",fontSize:24,color:chosen.color}}>{name||"Kid's Name"}</div>
+        </div>
+        {/* Emoji */}
+        <div style={{marginBottom:16}}>
+          <div style={{fontSize:11,fontWeight:800,color:"#bbb",letterSpacing:1,marginBottom:8}}>PICK AN EMOJI</div>
+          <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
+            {KID_EMOJIS.map(em=><div key={em} onClick={()=>setEmoji(em)} style={{width:40,height:40,borderRadius:10,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,background:emoji===em?chosen.color:chosen.light,transition:"all .15s"}}>{em}</div>)}
+          </div>
+        </div>
+        {/* Color */}
+        <div style={{marginBottom:16}}>
+          <div style={{fontSize:11,fontWeight:800,color:"#bbb",letterSpacing:1,marginBottom:8}}>PICK A COLOR</div>
+          <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
+            {KID_COLORS.map((c,i)=><div key={i} onClick={()=>setColorIdx(i)} style={{width:36,height:36,borderRadius:10,cursor:"pointer",background:c.color,border:colorIdx===i?"3px solid #333":"3px solid transparent",transition:"all .15s"}}/>)}
+          </div>
+        </div>
+        {/* Name */}
+        <div style={{marginBottom:22}}>
+          <div style={{fontSize:11,fontWeight:800,color:"#bbb",letterSpacing:1,marginBottom:6}}>NAME</div>
+          <input value={name} onChange={e=>setName(e.target.value)} placeholder="e.g. Sofia" maxLength={20} style={{width:"100%",padding:"12px 14px",borderRadius:12,border:`2px solid ${chosen.color}44`,fontFamily:"'Nunito'",fontSize:16,fontWeight:700,outline:"none",boxSizing:"border-box"}}/>
+        </div>
+        {/* Reward */}
+        <div style={{marginBottom:22}}>
+          <div style={{fontSize:11,fontWeight:800,color:"#bbb",letterSpacing:1,marginBottom:8}}>🔒 SEAT BELT DAILY REWARD</div>
+          <div style={{display:"flex",gap:8}}>
+            {REWARD_OPTIONS.map(r=>(
+              <div key={r} onClick={()=>setReward(r)} style={{flex:1,padding:"10px 0",borderRadius:12,textAlign:"center",cursor:"pointer",fontFamily:"'Fredoka One'",fontSize:18,background:reward===r?chosen.color:chosen.light,color:reward===r?"white":chosen.color,border:`2px solid ${reward===r?chosen.color:"transparent"}`,transition:"all .15s"}}>
+                ${r}
+              </div>
+            ))}
+          </div>
+        </div>
+        <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+          {isEdit&&onDelete&&<button onClick={onDelete} style={{padding:"12px 16px",borderRadius:14,border:"none",background:"#FFF0F0",fontFamily:"'Nunito'",fontWeight:800,fontSize:13,color:"#FF6B6B",cursor:"pointer"}}>Delete</button>}
+          <button onClick={onCancel} style={{flex:1,padding:12,borderRadius:14,border:"2px solid #eee",background:"white",fontFamily:"'Nunito'",fontWeight:800,fontSize:14,color:"#bbb",cursor:"pointer"}}>Cancel</button>
+          <button onClick={()=>name.trim()&&onSave({emoji,color:chosen.color,light:chosen.light,name:name.trim(),reward})} style={{flex:2,padding:12,borderRadius:14,border:"none",background:name.trim()?`linear-gradient(135deg,${chosen.color},${chosen.color}cc)`:"#EEE",fontFamily:"'Nunito'",fontWeight:800,fontSize:14,color:name.trim()?"white":"#ccc",cursor:name.trim()?"pointer":"not-allowed"}}>{isEdit?"Save Changes":"Add Kid ✓"}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+const VIDEO_SRC="video.mp4";
+
+// ── How To Use ──
+function SplashScreen({onDone}){
+  const [fading,setFading]=React.useState(false);
+  const [started,setStarted]=React.useState(false);
+  const vidRef=React.useRef();
+  function finish(){ localStorage.setItem('lumila-splash-seen','1'); setFading(true); setTimeout(onDone,600); }
+  function handleTap(){
+    if(!started){
+      setStarted(true);
+      vidRef.current.play().then(()=>{
+        const t=setTimeout(finish,3400);
+        vidRef.current._timer=t;
+      }).catch(finish);
+    } else { finish(); }
   }
-  window._notifTimers = [];
-
-  var now = Date.now();
-  events.forEach(function(ev){
-    if(ev.status === 'personal' || ev.status === 'busy') return;
-    // parse event datetime
-    var evDate = new Date(ev.date + 'T' + ev.start);
-    var fireAt15 = evDate.getTime() - 15*60*1000; // 15 min before
-    var fireAt0  = evDate.getTime();               // at start time
-
-    if(fireAt15 > now){
-      var t1 = setTimeout(function(){
-        new Notification('agenda · 15 min', {
-          body: ev.name + (ev.desc ? ' — ' + ev.desc : ''),
-          icon: 'icon-192.png',
-          tag: ev.id + '_15'
-        });
-      }, fireAt15 - now);
-      window._notifTimers.push(t1);
+  React.useEffect(()=>{
+    // Try autoplay first
+    if(vidRef.current){
+      vidRef.current.play().then(()=>{
+        setStarted(true);
+        const t=setTimeout(finish,3400);
+        vidRef.current._timer=t;
+      }).catch(()=>{}); // silently fail — user tap will start it
     }
-    if(fireAt0 > now){
-      var t2 = setTimeout(function(){
-        new Notification('agenda · starting now', {
-          body: ev.name + (ev.start ? ' at ' + ev.start : ''),
-          icon: 'icon-192.png',
-          tag: ev.id + '_0'
-        });
-      }, fireAt0 - now);
-      window._notifTimers.push(t2);
-    }
-  });
+  },[]);
+  return (
+    <div onClick={handleTap} style={{position:"fixed",inset:0,zIndex:2000,background:"#000",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",transition:"opacity .6s",opacity:fading?0:1}}>
+      {!started&&<div style={{position:"absolute",zIndex:10,textAlign:"center"}}>
+        <div style={{fontSize:64,marginBottom:12}}>▶️</div>
+        <div style={{color:"white",fontFamily:"'Fredoka One',cursive",fontSize:22}}>Tap to start</div>
+      </div>}
+      <video ref={vidRef} muted playsInline style={{width:"100%",height:"100%",objectFit:"cover"}}
+        onEnded={finish}
+        src={VIDEO_SRC}
+      />
+      <div style={{position:"absolute",bottom:30,left:0,right:0,textAlign:"center",color:"rgba(255,255,255,.4)",fontSize:12,fontWeight:700,letterSpacing:1}}>TAP TO SKIP</div>
+    </div>
+  );
 }
 
-function showNotifBadge(show){
-  var badge = document.getElementById('notifBell');
-  if(badge) badge.style.background = show ? '#B83C2B' : 'transparent';
-}
+// ── Main App ──
+function App(){
+  const [data,setData]=useState(loadData);
+  const [view,setView]=useState("today");
+  const [burst,setBurst]=useState(false);
+  const [celebrate,setCelebrate]=useState(null);
+  const [bonusConfirm,setBonusConfirm]=useState(null);
+  const [unlockConfirm,setUnlockConfirm]=useState(null);
+  const [showAddTask,setShowAddTask]=useState(false);
+  const [newTask,setNewTask]=useState({label:"",icon:"⭐",hint:""});
+  const [kidForm,setKidForm]=useState(null);
+  const [showVideo,setShowVideo]=useState(false); // null | "new" | kid object
+  const [deleteConfirm,setDeleteConfirm]=useState(null);
+  const [showAddVacTask,setShowAddVacTask]=useState(false);
+  const [newVacTask,setNewVacTask]=useState({label:"",icon:"🌴"});
+  const celebrated=useRef({});
+  const today=getTodayKey(), cw=getWeekKey(today);
 
-// re-schedule whenever events change
-var _origPersist = persist;
-persist = function(){
-  _origPersist();
-  scheduleAllNotifications();
-};
+  const kids = data.kids || DEFAULT_KIDS;
+  const vacationMode = !!data.vacationMode;
+  const vacationTasks = data.vacationTasks || DEFAULT_VACATION_TASKS;
 
-// ── NOTIFICATIONS ──
-function handleNotifBtn(){
-  if(!('Notification' in window)){
-    alert('Your browser does not support notifications.\nOn iPhone: open in Safari and add to home screen first.');
-    return;
-  }
-  if(Notification.permission === 'granted'){
-    alert('Notifications are ON ✓\nYou get a reminder 15 min before each job and at start time.');
-  } else {
-    Notification.requestPermission().then(function(result){
-      notifPermission = result;
-      localStorage.setItem('ag6_notif', result);
-      if(result === 'granted'){
-        updateNotifBtn();
-        scheduleAllNotifications();
-        new Notification('agenda', {
-          body: 'Notifications are on. You\'ll be reminded 15 min before each job.',
-          icon: 'icon-192.png'
-        });
-      } else {
-        alert('Notifications blocked.\nOn iPhone: Settings → Safari → Notifications → allow jorni.day');
-      }
+  useEffect(()=>{
+    saveData(data);
+    kids.forEach(kid=>{
+      const tasks=getTasksForKid(kid.id);
+      const dd=data.days?.[kid.id]?.[today]||{};
+      const all=tasks.length>0&&tasks.every(t=>dd[t.id]);
+      if(all&&!celebrated.current[kid.id]){ celebrated.current[kid.id]=true; setCelebrate(kid); }
+      if(!all) celebrated.current[kid.id]=false;
     });
+  },[data]);
+
+  function setD(fn){ setData(prev=>{ const n=fn(prev); return n; }); }
+
+  function getTasksForKid(kidId){
+    if(data.vacationMode) return data.vacationTasks || DEFAULT_VACATION_TASKS;
+    const ul=data.unlocked?.[kidId]||[];
+    const disabled=data.disabledBase?.[kidId]||[];
+    const extras=[...EXTRA_TASKS,...(data.customTasks||[])];
+    return [...BASE_TASKS.filter(t=>!disabled.includes(t.id)),...extras.filter(t=>ul.includes(t.id))];
   }
-}
 
-function updateNotifBtn(){
-  var btn = document.getElementById('notifBell');
-  if(!btn) return;
-  if(notifPermission === 'granted'){
-    btn.textContent = 'notif on';
-    btn.style.color = '#3D8B5E';
-    btn.style.borderColor = '#3D8B5E';
-  } else {
-    btn.textContent = 'notify';
-    btn.style.color = 'var(--mu)';
-    btn.style.borderColor = 'var(--ln)';
+  function toggleVacationMode(){
+    setD(prev=>({...prev,vacationMode:!prev.vacationMode,vacationTasks:prev.vacationTasks||DEFAULT_VACATION_TASKS}));
   }
+  function addVacTask(){
+    if(!newVacTask.label.trim()) return;
+    const id="vt_"+Date.now();
+    setD(prev=>({...prev,vacationTasks:[...(prev.vacationTasks||DEFAULT_VACATION_TASKS),{id,label:newVacTask.label.trim(),icon:newVacTask.icon}]}));
+    setNewVacTask({label:"",icon:"🌴"}); setShowAddVacTask(false);
+  }
+  function deleteVacTask(taskId){
+    setD(prev=>({...prev,vacationTasks:(prev.vacationTasks||DEFAULT_VACATION_TASKS).filter(t=>t.id!==taskId)}));
+  }
+
+  function toggleBaseTask(kidId,taskId){
+    setD(prev=>{ const cur=prev.disabledBase?.[kidId]||[]; const next=cur.includes(taskId)?cur.filter(id=>id!==taskId):[...cur,taskId]; return {...prev,disabledBase:{...prev.disabledBase,[kidId]:next}}; });
+  }
+  function isBaseDisabled(kidId,taskId){ return (data.disabledBase?.[kidId]||[]).includes(taskId); }
+
+  function toggleTask(kidId,taskId){
+    const wasOn=data.days?.[kidId]?.[today]?.[taskId];
+    const task=getTasksForKid(kidId).find(t=>t.id===taskId);
+    if(!wasOn&&task?.special){ setBurst(true); setTimeout(()=>setBurst(false),1500); }
+    setD(prev=>({...prev,days:{...prev.days,[kidId]:{...prev.days?.[kidId],[today]:{...prev.days?.[kidId]?.[today],[taskId]:!wasOn}}}}));
+  }
+
+  function isUnlocked(kidId,taskId){ return (data.unlocked?.[kidId]||[]).includes(taskId); }
+  function unlockTask(kidId,taskId){
+    setUnlockConfirm(null);
+    setD(prev=>{ const cur=prev.unlocked?.[kidId]||[]; const next=cur.includes(taskId)?cur.filter(id=>id!==taskId):[...cur,taskId]; return {...prev,unlocked:{...prev.unlocked,[kidId]:next}}; });
+  }
+
+  function addCustomTask(){
+    if(!newTask.label.trim()) return;
+    const id="ct_"+Date.now();
+    setD(prev=>({...prev,customTasks:[...(prev.customTasks||[]),{id,label:newTask.label.trim(),icon:newTask.icon||"⭐",hint:newTask.hint.trim()}]}));
+    setNewTask({label:"",icon:"⭐",hint:""}); setShowAddTask(false);
+  }
+  function deleteCustomTask(taskId){
+    setD(prev=>{ const ul={...prev.unlocked}; Object.keys(ul).forEach(k=>{ ul[k]=(ul[k]||[]).filter(id=>id!==taskId); }); return {...prev,customTasks:(prev.customTasks||[]).filter(t=>t.id!==taskId),unlocked:ul}; });
+  }
+  function getAllExtraTasks(){ return [...EXTRA_TASKS,...(data.customTasks||[])]; }
+
+  function hasBonus(kidId,wk){ return (data.bonuses||[]).some(b=>b.kidId===kidId&&b.weekKey===wk); }
+  function awardBonus(kidId,wk){
+    setBurst(true); setTimeout(()=>setBurst(false),2000); setBonusConfirm(null);
+    setD(prev=>({...prev,bonuses:[...(prev.bonuses||[]),{kidId,weekKey:wk,amount:BONUS_AMOUNT,on:today}]}));
+  }
+
+  function getTotalEarned(kidId){
+    const kid=kids.find(k=>k.id===kidId);
+    const reward=kid?.reward||1;
+    let t=0;
+    Object.values(data.days?.[kidId]||{}).forEach(day=>BASE_TASKS.forEach(tk=>{ if(tk.earns>0&&day[tk.id]) t+=reward; }));
+    (data.bonuses||[]).filter(b=>b.kidId===kidId).forEach(b=>t+=b.amount);
+    return t;
+  }
+  function getHistoryDays(kidId){ return Object.entries(data.days?.[kidId]||{}).sort(([a],[b])=>b.localeCompare(a)).slice(0,14); }
+  function getAllWeeks(){ const s=new Set([cw]); kids.forEach(k=>Object.keys(data.days?.[k.id]||{}).forEach(d=>s.add(getWeekKey(d)))); return [...s].sort((a,b)=>b.localeCompare(a)); }
+
+  // Kid management
+  function saveKid(kidData){
+    if(kidForm==="new"){
+      const id=mkId();
+      setD(prev=>({...prev,kids:[...(prev.kids||DEFAULT_KIDS),{id,...kidData}]}));
+    } else {
+      setD(prev=>({...prev,kids:(prev.kids||DEFAULT_KIDS).map(k=>k.id===kidForm.id?{...k,...kidData}:k)}));
+    }
+    setKidForm(null);
+  }
+  function deleteKid(kidId){
+    setD(prev=>{
+      const kids=(prev.kids||DEFAULT_KIDS).filter(k=>k.id!==kidId);
+      const days={...prev.days}; delete days[kidId];
+      const ul={...prev.unlocked}; delete ul[kidId];
+      const bonuses=(prev.bonuses||[]).filter(b=>b.kidId!==kidId);
+      return {...prev,kids,days,unlocked:ul,bonuses};
+    });
+    setDeleteConfirm(null); setKidForm(null);
+  }
+
+  const allWeeks=getAllWeeks();
+  const totalOwed=kids.reduce((s,k)=>s+getTotalEarned(k.id),0);
+
+  return (
+    <div style={{minHeight:"100vh",background:"linear-gradient(160deg,#FFF8F0 0%,#F0EAFF 100%)",fontFamily:"'Nunito',sans-serif",paddingBottom:80}}>
+      <style>{`
+        @keyframes coinFall{0%{transform:translateY(-20px) scale(.5) rotate(0);opacity:1}100%{transform:translateY(80px) scale(1.2) rotate(360deg);opacity:0}}
+        @keyframes popIn{0%{transform:scale(.85);opacity:0}70%{transform:scale(1.05)}100%{transform:scale(1);opacity:1}}
+        @keyframes slideUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+        @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}
+        @keyframes perfectGlow{0%,100%{box-shadow:0 0 20px rgba(255,215,0,.4),0 4px 20px rgba(0,0,0,.07)}50%{box-shadow:0 0 40px rgba(255,215,0,.8),0 4px 20px rgba(0,0,0,.07)}}
+        @keyframes rainbowBorder{0%{border-color:#FF6B6B}16%{border-color:#FFD700}33%{border-color:#7C5CFC}50%{border-color:#4CAF50}66%{border-color:#00E5FF}83%{border-color:#FF9800}100%{border-color:#FF6B6B}}
+        .task-btn{transition:all .15s;cursor:pointer} .task-btn:active{transform:scale(.95)}
+        .nav-btn{transition:all .2s;cursor:pointer;border:none}
+        .overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px}
+        .perfect-card{animation:perfectGlow 1.5s ease-in-out infinite,rainbowBorder 2s linear infinite !important;border-width:2.5px !important}
+        .kid-chip{cursor:pointer;transition:all .2s} .kid-chip:active{transform:scale(.95)}
+      `}</style>
+
+      {celebrate&&<Celebration kid={celebrate} onDone={()=>setCelebrate(null)}/>}
+      <CoinBurst active={burst}/>
+
+      {/* Kid Form Modal */}
+      {kidForm!==null&&(
+        <KidForm
+          kid={kidForm==="new"?null:kidForm}
+          onSave={saveKid}
+          onCancel={()=>setKidForm(null)}
+          onDelete={kidForm!=="new"?()=>setDeleteConfirm(kidForm):null}
+        />
+      )}
+
+      {/* Delete Confirm */}
+      {deleteConfirm&&(
+        <div className="overlay" onClick={()=>setDeleteConfirm(null)}>
+          <div onClick={e=>e.stopPropagation()} style={{background:"white",borderRadius:28,padding:"28px 24px",textAlign:"center",maxWidth:300,width:"100%",animation:"popIn .25s ease",boxShadow:"0 20px 60px rgba(0,0,0,.2)"}}>
+            <div style={{fontSize:48,marginBottom:12}}>⚠️</div>
+            <div style={{fontFamily:"'Fredoka One'",fontSize:22,color:"#333",marginBottom:6}}>Delete {deleteConfirm.name}?</div>
+            <div style={{color:"#bbb",fontSize:13,marginBottom:24}}>All their data will be lost.</div>
+            <div style={{display:"flex",gap:10}}>
+              <button onClick={()=>setDeleteConfirm(null)} style={{flex:1,padding:12,borderRadius:14,border:"2px solid #eee",background:"white",fontFamily:"'Nunito'",fontWeight:800,fontSize:14,color:"#bbb",cursor:"pointer"}}>Cancel</button>
+              <button onClick={()=>deleteKid(deleteConfirm.id)} style={{flex:2,padding:12,borderRadius:14,border:"none",background:"linear-gradient(135deg,#EF5350,#B71C1C)",fontFamily:"'Nunito'",fontWeight:800,fontSize:14,color:"white",cursor:"pointer"}}>Delete ✕</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bonus Modal */}
+      {bonusConfirm&&(
+        <div className="overlay" onClick={()=>setBonusConfirm(null)}>
+          <div onClick={e=>e.stopPropagation()} style={{background:"white",borderRadius:28,padding:"32px 24px",textAlign:"center",maxWidth:320,width:"100%",animation:"popIn .25s ease",boxShadow:"0 20px 60px rgba(0,0,0,.2)"}}>
+            <div style={{fontSize:52,marginBottom:12}}>🏆</div>
+            <div style={{fontFamily:"'Fredoka One'",fontSize:24,color:"#333",marginBottom:6}}>Good Week, {kids.find(k=>k.id===bonusConfirm.kidId)?.name}!</div>
+            <div style={{color:"#999",fontSize:14,marginBottom:8}}>{formatWeekRange(bonusConfirm.weekKey)}</div>
+            <div style={{fontFamily:"'Fredoka One'",fontSize:48,color:"#4CAF50",marginBottom:4}}>+${BONUS_AMOUNT}</div>
+            <div style={{color:"#bbb",fontSize:12,marginBottom:24}}>Weekly bonus</div>
+            <div style={{display:"flex",gap:10}}>
+              <button onClick={()=>setBonusConfirm(null)} style={{flex:1,padding:12,borderRadius:14,border:"2px solid #eee",background:"white",fontFamily:"'Nunito'",fontWeight:800,fontSize:14,color:"#bbb",cursor:"pointer"}}>Cancel</button>
+              <button onClick={()=>awardBonus(bonusConfirm.kidId,bonusConfirm.weekKey)} style={{flex:2,padding:12,borderRadius:14,border:"none",background:"linear-gradient(135deg,#4CAF50,#2E7D32)",fontFamily:"'Nunito'",fontWeight:800,fontSize:14,color:"white",cursor:"pointer"}}>Award ${BONUS_AMOUNT} ✓</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Unlock Modal */}
+      {unlockConfirm&&(
+        <div className="overlay" onClick={()=>setUnlockConfirm(null)}>
+          <div onClick={e=>e.stopPropagation()} style={{background:"white",borderRadius:28,padding:"28px 24px",textAlign:"center",maxWidth:320,width:"100%",animation:"popIn .25s ease",boxShadow:"0 20px 60px rgba(0,0,0,.2)"}}>
+            {(()=>{ const kid=kids.find(k=>k.id===unlockConfirm.kidId),task=getAllExtraTasks().find(t=>t.id===unlockConfirm.taskId),on=isUnlocked(unlockConfirm.kidId,unlockConfirm.taskId); return (<>
+              <div style={{fontSize:48,marginBottom:10}}>{on?"🔒":task?.icon}</div>
+              <div style={{fontFamily:"'Fredoka One'",fontSize:22,color:kid?.color,marginBottom:4}}>{on?"Remove task?":"Unlock task?"}</div>
+              <div style={{fontFamily:"'Fredoka One'",fontSize:18,color:"#333",marginBottom:4}}>{task?.label}</div>
+              <div style={{color:"#bbb",fontSize:13,marginBottom:6}}>for {kid?.name} {kid?.emoji}</div>
+              {!on&&task?.hint&&<div style={{background:"#F8F8F8",borderRadius:10,padding:"8px 12px",fontSize:12,color:"#999",marginBottom:16}}>{task.hint}</div>}
+              <div style={{display:"flex",gap:10,marginTop:16}}>
+                <button onClick={()=>setUnlockConfirm(null)} style={{flex:1,padding:12,borderRadius:14,border:"2px solid #eee",background:"white",fontFamily:"'Nunito'",fontWeight:800,fontSize:14,color:"#bbb",cursor:"pointer"}}>Cancel</button>
+                <button onClick={()=>unlockTask(unlockConfirm.kidId,unlockConfirm.taskId)} style={{flex:2,padding:12,borderRadius:14,border:"none",background:on?"linear-gradient(135deg,#EF5350,#B71C1C)":`linear-gradient(135deg,${kid?.color},${kid?.color}cc)`,fontFamily:"'Nunito'",fontWeight:800,fontSize:14,color:"white",cursor:"pointer"}}>{on?"Remove ✕":"Unlock ✓"}</button>
+              </div>
+            </>); })()}
+          </div>
+        </div>
+      )}
+
+      {/* Add Task Modal */}
+      {showAddTask&&(
+        <div className="overlay" onClick={()=>setShowAddTask(false)}>
+          <div onClick={e=>e.stopPropagation()} style={{background:"white",borderRadius:28,padding:"28px 22px",maxWidth:340,width:"100%",boxShadow:"0 20px 60px rgba(0,0,0,.25)",animation:"popIn .25s ease"}}>
+            <div style={{fontFamily:"'Fredoka One'",fontSize:22,color:"#333",marginBottom:20,textAlign:"center"}}>✏️ Add Custom Task</div>
+            <div style={{marginBottom:14}}>
+              <div style={{fontSize:11,fontWeight:800,color:"#bbb",letterSpacing:1,marginBottom:8}}>ICON</div>
+              <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
+                {["🧺","🚗","🐈","🐟","🌻","🍕","🎸","⚽","🎨","🧸","🛁","🪴","💊","📱","🧩","🎯","🛵","🏠","💡","🔧"].map(em=>(
+                  <div key={em} onClick={()=>setNewTask(p=>({...p,icon:em}))} style={{width:38,height:38,borderRadius:10,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,background:newTask.icon===em?"#7C5CFC":"#F5F5F5"}}>{em}</div>
+                ))}
+              </div>
+            </div>
+            <div style={{marginBottom:14}}>
+              <div style={{fontSize:11,fontWeight:800,color:"#bbb",letterSpacing:1,marginBottom:6}}>TASK NAME</div>
+              <input value={newTask.label} onChange={e=>setNewTask(p=>({...p,label:e.target.value}))} placeholder="e.g. Walk the dog" maxLength={30} style={{width:"100%",padding:"10px 14px",borderRadius:12,border:"2px solid #EEE",fontFamily:"'Nunito'",fontSize:15,fontWeight:700,outline:"none",boxSizing:"border-box"}}/>
+            </div>
+            <div style={{marginBottom:22}}>
+              <div style={{fontSize:11,fontWeight:800,color:"#bbb",letterSpacing:1,marginBottom:6}}>HINT (optional)</div>
+              <input value={newTask.hint} onChange={e=>setNewTask(p=>({...p,hint:e.target.value}))} placeholder="e.g. Every morning" maxLength={40} style={{width:"100%",padding:"10px 14px",borderRadius:12,border:"2px solid #EEE",fontFamily:"'Nunito'",fontSize:14,outline:"none",boxSizing:"border-box"}}/>
+            </div>
+            <div style={{display:"flex",gap:10}}>
+              <button onClick={()=>setShowAddTask(false)} style={{flex:1,padding:12,borderRadius:14,border:"2px solid #eee",background:"white",fontFamily:"'Nunito'",fontWeight:800,fontSize:14,color:"#bbb",cursor:"pointer"}}>Cancel</button>
+              <button onClick={addCustomTask} style={{flex:2,padding:12,borderRadius:14,border:"none",background:newTask.label.trim()?"linear-gradient(135deg,#7C5CFC,#FF6B6B)":"#EEE",fontFamily:"'Nunito'",fontWeight:800,fontSize:14,color:newTask.label.trim()?"white":"#ccc",cursor:newTask.label.trim()?"pointer":"not-allowed"}}>Add Task ✓</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+
+      {/* How to Use Video Modal */}
+      {showVideo&&(
+        <div onClick={()=>setShowVideo(false)} style={{position:"fixed",inset:0,zIndex:2000,background:"rgba(0,0,0,.95)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",cursor:"pointer"}}>
+          <video autoPlay muted playsInline controls style={{width:"100%",maxWidth:480,borderRadius:16,boxShadow:"0 20px 60px rgba(0,0,0,.5)"}}
+            src={VIDEO_SRC}
+          />
+          <div style={{color:"rgba(255,255,255,.5)",fontSize:13,fontWeight:700,marginTop:16,letterSpacing:1}}>TAP ANYWHERE TO CLOSE</div>
+        </div>
+      )}
+
+      {/* Header */}
+      <div style={{background:vacationMode?"linear-gradient(135deg,#FF9800 0%,#FF5722 50%,#E91E63 100%)":"linear-gradient(135deg,#7C5CFC 0%,#FF6B6B 100%)",padding:"28px 20px 20px",boxShadow:vacationMode?"0 4px 20px rgba(255,152,0,.4)":"0 4px 20px rgba(124,92,252,.3)",transition:"background .5s"}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+          <div>
+            <div style={{fontFamily:"'Fredoka One',cursive",fontSize:28,color:"white",letterSpacing:1}}>
+              {vacationMode?"🌴 VACATION MODE 🌊":"🌙 LUMILA ⭐"}
+            </div>
+            <div style={{color:"rgba(255,255,255,.75)",fontSize:11,fontWeight:700,letterSpacing:2}}>
+              {vacationMode?"ADVENTURE MISSIONS":"DAILY MISSIONS"}
+            </div>
+          </div>
+          {/* Kid avatars + add */}
+          <div style={{display:"flex",gap:6,alignItems:"center"}}>
+            <div className="kid-chip" onClick={()=>setView("manage")} style={{width:40,height:40,borderRadius:12,background:"rgba(255,255,255,.15)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,border:"2px solid rgba(255,255,255,.3)"}}>⚙️</div>
+            {kids.map(k=>(
+              <div key={k.id} className="kid-chip" onClick={()=>setKidForm(k)} style={{width:40,height:40,borderRadius:12,background:"rgba(255,255,255,.25)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,border:"2px solid rgba(255,255,255,.4)"}}>
+                {k.emoji}
+              </div>
+            ))}
+            <div className="kid-chip" onClick={()=>setKidForm("new")} style={{width:40,height:40,borderRadius:12,background:"rgba(255,255,255,.15)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,border:"2px dashed rgba(255,255,255,.5)"}}>
+              +
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Nav */}
+      <div style={{display:"flex",gap:6,padding:"12px 12px",justifyContent:"center",flexWrap:"wrap"}}>
+        {[{id:"today",label:"Today"},{id:"week",label:"Week 🏆"},{id:"wallet",label:"Wallet 💰"},{id:"history",label:"History"},{id:"manage",label:"⚙️ Settings"}].map(tab=>(
+          <button key={tab.id} className="nav-btn" onClick={()=>setView(tab.id)} style={{padding:"8px 14px",borderRadius:20,fontFamily:"'Nunito',sans-serif",fontWeight:800,fontSize:13,background:view===tab.id?"#7C5CFC":"white",color:view===tab.id?"white":"#999",boxShadow:view===tab.id?"0 4px 12px rgba(124,92,252,.4)":"0 2px 8px rgba(0,0,0,.06)"}}>{tab.label}</button>
+        ))}
+      </div>
+
+      <div style={{padding:"0 16px"}}>
+
+        {/* TODAY */}
+        {view==="today"&&(
+          <div>
+            <div style={{textAlign:"center",color:"#aaa",fontSize:12,fontWeight:700,letterSpacing:1,marginBottom:16}}>{formatDate(today).toUpperCase()}</div>
+            {kids.length===0&&(
+              <div style={{textAlign:"center",padding:"40px 20px"}}>
+                <div style={{fontSize:72,marginBottom:16}}>👨‍👧‍👦</div>
+                <div style={{fontFamily:"'Fredoka One'",fontSize:28,color:"#7C5CFC",marginBottom:8}}>Welcome to LUMILA!</div>
+                <div style={{color:"#bbb",fontSize:15,lineHeight:1.6,marginBottom:10}}>A daily missions app for your kids.</div>
+                <div style={{background:"white",borderRadius:20,padding:"20px",marginBottom:24,boxShadow:"0 4px 20px rgba(0,0,0,.07)",textAlign:"left"}}>
+                  {[["🔒","Seat belt reward — $1 a day"],["✅","Daily task checklist"],["🏆","Weekly bonus for good weeks"],["🔐","Unlock chores as they grow"]].map(([icon,text])=>(
+                    <div key={text} style={{display:"flex",alignItems:"center",gap:12,marginBottom:12}}>
+                      <div style={{width:36,height:36,borderRadius:10,background:"#F0EAFF",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>{icon}</div>
+                      <div style={{fontWeight:700,fontSize:14,color:"#555"}}>{text}</div>
+                    </div>
+                  ))}
+                </div>
+                <button onClick={()=>setKidForm("new")} style={{background:"linear-gradient(135deg,#7C5CFC,#FF6B6B)",border:"none",borderRadius:18,padding:"16px 36px",fontFamily:"'Fredoka One'",fontSize:22,color:"white",cursor:"pointer",boxShadow:"0 6px 20px rgba(124,92,252,.4)"}}>
+                  + Add Your First Kid
+                </button>
+                <div style={{color:"#ccc",fontSize:12,marginTop:14}}>You can add more kids anytime from ⚙️</div>
+              </div>
+            )}
+            {kids.map(kid=>{
+              const tasks=getTasksForKid(kid.id);
+              const dd=data.days?.[kid.id]?.[today]||{};
+              const dn=tasks.filter(t=>dd[t.id]).length;
+              const perfect=tasks.length>0&&dn===tasks.length;
+              return (
+                <div key={kid.id} className={perfect?"perfect-card":""} style={{background:perfect?"linear-gradient(135deg,#fffef0,#fff8e0)":"white",borderRadius:24,padding:"20px",marginBottom:16,boxShadow:"0 4px 20px rgba(0,0,0,.07)",border:`2px solid ${kid.light}`,position:"relative",overflow:"hidden"}}>
+                  {perfect&&<div style={{position:"absolute",top:0,left:0,right:0,height:4,background:"linear-gradient(90deg,#FF6B6B,#FFD700,#7C5CFC,#4CAF50,#00E5FF,#FF6B6B)"}}/>}
+                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
+                    <div style={{display:"flex",alignItems:"center",gap:10}}>
+                      <div style={{width:44,height:44,borderRadius:14,background:kid.color,display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,boxShadow:`0 4px 12px ${kid.color}55`,cursor:"pointer"}} onClick={()=>setKidForm(kid)}>{kid.emoji}</div>
+                      <div>
+                        <div style={{fontFamily:"'Fredoka One'",fontSize:22,color:kid.color,lineHeight:1}}>{kid.name}</div>
+                        <div style={{fontSize:11,color:perfect?"#C8860A":"#bbb",fontWeight:700}}>{perfect?"✨ PERFECT DAY!":`${dn}/${tasks.length} done`}</div>
+                      </div>
+                    </div>
+                    <div style={{background:perfect?"linear-gradient(135deg,#FFD700,#FF9800)":kid.light,borderRadius:12,padding:"6px 12px",fontFamily:"'Fredoka One'",fontSize:18,color:perfect?"white":kid.color,boxShadow:perfect?"0 3px 10px rgba(255,215,0,.5)":"none"}}>${getTotalEarned(kid.id).toFixed(0)}</div>
+                  </div>
+                  <div style={{background:kid.light,borderRadius:8,height:8,marginBottom:16,overflow:"hidden"}}>
+                    <div style={{height:"100%",width:`${tasks.length?(dn/tasks.length)*100:0}%`,background:perfect?"linear-gradient(90deg,#FF6B6B,#FFD700,#7C5CFC,#4CAF50)":kid.color,borderRadius:8,transition:"width .4s"}}/>
+                  </div>
+                  <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                    {tasks.map(task=>{ const done=!!dd[task.id]; const vacStyle=vacationMode&&done; return (
+                      <div key={task.id} className="task-btn" onClick={()=>toggleTask(kid.id,task.id)} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 14px",borderRadius:14,background:done?(task.special?"#FFF5D6":vacationMode?"#FFF3E0":kid.light):"#F8F8F8",border:`2px solid ${done?(task.special?"#FFD700":vacationMode?"#FFB74D":kid.color+"44"):"transparent"}`,boxShadow:vacStyle?"0 2px 12px rgba(255,152,0,.3)":task.special&&done?"0 2px 12px rgba(255,215,0,.4)":"none"}}>
+                        <div style={{display:"flex",alignItems:"center",gap:10}}>
+                          <span style={{fontSize:20}}>{task.icon}</span>
+                          <span style={{fontWeight:700,fontSize:14,color:done?"#333":"#aaa"}}>{task.label}</span>
+                          {task.special&&<span style={{background:"#FFD700",color:"#7A5000",fontSize:10,fontWeight:800,padding:"2px 6px",borderRadius:6}}>${kid.reward||1}</span>}
+                        </div>
+                        <div style={{width:26,height:26,borderRadius:8,background:done?(task.special?"#FFD700":vacationMode?"#FF9800":kid.color):"#E8E8E8",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,transition:"all .2s"}}>{done?"✓":""}</div>
+                      </div>
+                    ); })}
+                  </div>
+                  {perfect&&<div style={{marginTop:14,textAlign:"center",padding:"10px",borderRadius:14,background:"linear-gradient(135deg,#FFF5D6,#FFE0A0)",border:"1.5px solid #FFD700"}}><span style={{fontSize:22}}>🏆</span><span style={{fontFamily:"'Fredoka One'",fontSize:16,color:"#C8860A",marginLeft:8}}>All missions complete!</span></div>}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* WEEK */}
+        {view==="week"&&(
+          <div style={{animation:"slideUp .3s ease"}}>
+            {allWeeks.map((wk,wi)=>{ const isCW=wk===cw,wd=getWeekDays(wk); return (
+              <div key={wk} style={{marginBottom:24}}>
+                <div style={{paddingLeft:4,marginBottom:10}}>
+                  <div style={{fontFamily:"'Fredoka One'",fontSize:15,color:isCW?"#7C5CFC":"#999"}}>{isCW?"THIS WEEK":`WEEK ${wi+1}`}</div>
+                  <div style={{fontSize:12,color:"#bbb",fontWeight:700}}>{formatWeekRange(wk)}</div>
+                </div>
+                {kids.map(kid=>{ const tasks=getTasksForKid(kid.id),{pct}=getWeekScore(data.days?.[kid.id],wk,tasks),stars=getStars(pct),bonused=hasBonus(kid.id,wk),sb=wd.filter(d=>data.days?.[kid.id]?.[d]?.seatbelt).length; return (
+                  <div key={kid.id} style={{background:"white",borderRadius:22,padding:"18px",marginBottom:12,boxShadow:"0 4px 16px rgba(0,0,0,.06)",border:bonused?"2px solid #4CAF50":`2px solid ${kid.light}`}}>
+                    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
+                      <div style={{display:"flex",alignItems:"center",gap:10}}>
+                        <div style={{width:40,height:40,borderRadius:12,background:kid.color,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,boxShadow:`0 3px 10px ${kid.color}44`}}>{kid.emoji}</div>
+                        <div>
+                          <div style={{fontFamily:"'Fredoka One'",fontSize:19,color:kid.color}}>{kid.name}</div>
+                          <div style={{fontSize:12,color:"#bbb",fontWeight:700}}>{"★".repeat(stars)}{"☆".repeat(5-stars)} {pct}%</div>
+                        </div>
+                      </div>
+                      {bonused?<div style={{background:"#E8F5E9",border:"1.5px solid #4CAF50",borderRadius:10,padding:"5px 10px",fontFamily:"'Fredoka One'",fontSize:14,color:"#2E7D32"}}>+${BONUS_AMOUNT} ✓</div>
+                      :isCW?<button onClick={()=>setBonusConfirm({kidId:kid.id,weekKey:wk})} style={{background:stars>=3?"linear-gradient(135deg,#4CAF50,#2E7D32)":"#F0F0F0",border:"none",borderRadius:10,padding:"8px 12px",fontFamily:"'Nunito'",fontWeight:800,fontSize:12,color:stars>=3?"white":"#ccc",cursor:stars>=3?"pointer":"not-allowed",animation:stars>=3?"pulse 2s infinite":"none"}}>{stars>=3?`Award $${BONUS_AMOUNT}`:"Keep going..."}</button>:null}
+                    </div>
+                    <div style={{display:"flex",gap:5,marginBottom:12}}>
+                      {wd.map(d=>{ const dd=data.days?.[kid.id]?.[d]||{},dn=tasks.filter(t=>dd[t.id]).length,fut=d>today,tod=d===today,pD=tasks.length?dn/tasks.length:0,perf=tasks.length>0&&dn===tasks.length; return (
+                        <div key={d} style={{flex:1,textAlign:"center"}}>
+                          <div style={{fontSize:9,color:tod?kid.color:"#ccc",fontWeight:800,marginBottom:3}}>{WEEK_DAYS[new Date(d+"T12:00:00").getDay()]}</div>
+                          <div style={{height:36,borderRadius:8,background:fut?"#F5F5F5":perf?"linear-gradient(135deg,#FFD700,#FF9800)":pD===0?"#FFEBEE":pD<.5?kid.light:pD<1?kid.color+"88":kid.color,border:tod?`2px solid ${kid.color}`:"2px solid transparent",display:"flex",alignItems:"center",justifyContent:"center",fontSize:perf?16:13}}>
+                            {fut?"":perf?"🏆":pD===0?"✗":pD===1?"✓":dn}
+                          </div>
+                        </div>
+                      ); })}
+                    </div>
+                    <div style={{display:"flex",gap:8}}>
+                      <div style={{flex:1,background:"#FFF5D6",borderRadius:10,padding:"8px",textAlign:"center"}}><div style={{fontFamily:"'Fredoka One'",fontSize:18,color:"#C8860A"}}>{sb}</div><div style={{fontSize:10,fontWeight:700,color:"#bbb"}}>🔒 DAYS</div></div>
+                      <div style={{flex:1,background:kid.light,borderRadius:10,padding:"8px",textAlign:"center"}}><div style={{fontFamily:"'Fredoka One'",fontSize:18,color:kid.color}}>{pct}%</div><div style={{fontSize:10,fontWeight:700,color:"#bbb"}}>TASKS</div></div>
+                      <div style={{flex:1,background:bonused?"#E8F5E9":"#F5F5F5",borderRadius:10,padding:"8px",textAlign:"center"}}><div style={{fontFamily:"'Fredoka One'",fontSize:18,color:bonused?"#2E7D32":"#ccc"}}>{bonused?`$${BONUS_AMOUNT}`:"—"}</div><div style={{fontSize:10,fontWeight:700,color:"#bbb"}}>BONUS</div></div>
+                    </div>
+                  </div>
+                ); })}
+              </div>
+            ); })}
+          </div>
+        )}
+
+        {/* WALLET */}
+        {view==="wallet"&&(
+          <div>
+            {kids.map(kid=>{ const total=getTotalEarned(kid.id),sb=Object.values(data.days?.[kid.id]||{}).filter(d=>d.seatbelt).length,bon=(data.bonuses||[]).filter(b=>b.kidId===kid.id).reduce((s,b)=>s+b.amount,0); return (
+              <div key={kid.id} style={{background:"white",borderRadius:24,padding:"24px",marginBottom:16,boxShadow:"0 4px 20px rgba(0,0,0,.07)",overflow:"hidden",position:"relative"}}>
+                <div style={{position:"absolute",right:-20,top:-20,width:120,height:120,borderRadius:"50%",background:kid.color+"11"}}/>
+                <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20}}>
+                  <div style={{width:50,height:50,borderRadius:16,background:kid.color,display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,boxShadow:`0 4px 14px ${kid.color}55`}}>{kid.emoji}</div>
+                  <div style={{fontFamily:"'Fredoka One'",fontSize:26,color:kid.color}}>{kid.name}</div>
+                </div>
+                <div style={{textAlign:"center",marginBottom:20}}>
+                  <div style={{color:"#bbb",fontSize:11,fontWeight:700,letterSpacing:1}}>TOTAL EARNED</div>
+                  <div style={{fontFamily:"'Fredoka One'",fontSize:64,color:kid.color,lineHeight:1.1}}>${total.toFixed(0)}</div>
+                </div>
+                <div style={{display:"flex",gap:10}}>
+                  <div style={{flex:1,background:"#FFF5D6",borderRadius:14,padding:"12px",textAlign:"center"}}><div style={{fontFamily:"'Fredoka One'",fontSize:22,color:"#C8860A"}}>${sb}</div><div style={{fontSize:11,fontWeight:700,color:"#bbb"}}>🔒 BELT</div></div>
+                  <div style={{flex:1,background:"#E8F5E9",borderRadius:14,padding:"12px",textAlign:"center"}}><div style={{fontFamily:"'Fredoka One'",fontSize:22,color:"#2E7D32"}}>${bon}</div><div style={{fontSize:11,fontWeight:700,color:"#bbb"}}>🏆 BONUS</div></div>
+                  <div style={{flex:1,background:kid.light,borderRadius:14,padding:"12px",textAlign:"center"}}><div style={{fontFamily:"'Fredoka One'",fontSize:22,color:kid.color}}>${total.toFixed(0)}</div><div style={{fontSize:11,fontWeight:700,color:"#bbb"}}>TOTAL</div></div>
+                </div>
+              </div>
+            ); })}
+            <div style={{background:"linear-gradient(135deg,#7C5CFC,#FF6B6B)",borderRadius:24,padding:"20px",textAlign:"center",boxShadow:"0 8px 24px rgba(124,92,252,.3)"}}>
+              <div style={{color:"rgba(255,255,255,.7)",fontSize:11,fontWeight:700,letterSpacing:1}}>PAPA OWES TOTAL</div>
+              <div style={{fontFamily:"'Fredoka One'",fontSize:52,color:"white"}}>${totalOwed.toFixed(0)}</div>
+              <div style={{color:"rgba(255,255,255,.7)",fontSize:12}}>💸 Pay up, Dad!</div>
+            </div>
+          </div>
+        )}
+
+        {/* HISTORY */}
+        {view==="history"&&(
+          <div>
+            {kids.map(kid=>(
+              <div key={kid.id} style={{marginBottom:20}}>
+                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
+                  <span style={{fontSize:20}}>{kid.emoji}</span>
+                  <span style={{fontFamily:"'Fredoka One'",fontSize:20,color:kid.color}}>{kid.name}</span>
+                </div>
+                {getHistoryDays(kid.id).length===0?<div style={{color:"#ccc",fontSize:13,textAlign:"center",padding:20}}>No history yet</div>:(
+                  getHistoryDays(kid.id).map(([date,dd])=>{
+                    const tasks=getTasksForKid(kid.id),done=tasks.filter(t=>dd[t.id]),earned=dd.seatbelt?(kid.reward||1):0,perf=done.length===tasks.length&&tasks.length>0;
+                    return (
+                      <div key={date} style={{background:perf?"linear-gradient(135deg,#fffef0,#fff8e0)":"white",borderRadius:16,padding:"12px 16px",marginBottom:8,display:"flex",alignItems:"center",justifyContent:"space-between",boxShadow:perf?"0 2px 14px rgba(255,215,0,.25)":"0 2px 10px rgba(0,0,0,.05)",border:perf?"1.5px solid #FFD700":"1.5px solid transparent"}}>
+                        <div>
+                          <div style={{fontWeight:700,fontSize:13,color:"#333",display:"flex",alignItems:"center",gap:6}}>{date===today?"Today":formatDate(date)}{perf&&<span>🏆</span>}</div>
+                          <div style={{fontSize:18,marginTop:2}}>{done.map(t=>t.icon).join(" ")||"—"}</div>
+                        </div>
+                        {earned>0&&<div style={{background:"#FFF5D6",border:"1.5px solid #FFD700",borderRadius:10,padding:"4px 10px",fontFamily:"'Fredoka One'",fontSize:16,color:"#C8860A"}}>+${earned.toFixed(0)}</div>}
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* MANAGE TASKS */}
+        {view==="manage"&&(
+          <div style={{animation:"slideUp .3s ease"}}>
+            {/* How to Use */}
+            <div onClick={()=>setShowVideo(true)} style={{background:"linear-gradient(135deg,#1a1a2e,#16213e)",borderRadius:20,padding:"20px",marginBottom:16,display:"flex",alignItems:"center",gap:16,cursor:"pointer",boxShadow:"0 4px 16px rgba(0,0,0,.15)"}}>
+              <div style={{width:52,height:52,borderRadius:14,background:"rgba(255,255,255,.1)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,flexShrink:0}}>🎬</div>
+              <div>
+                <div style={{fontFamily:"'Fredoka One'",fontSize:20,color:"white",marginBottom:2}}>How to Use</div>
+                <div style={{color:"rgba(255,255,255,.5)",fontSize:12,fontWeight:700}}>Watch the quick intro video</div>
+              </div>
+              <div style={{marginLeft:"auto",color:"rgba(255,255,255,.3)",fontSize:22}}>▶</div>
+            </div>
+
+
+            {/* Add vacation task modal */}
+            {showAddVacTask&&(
+              <div className="overlay" onClick={()=>setShowAddVacTask(false)}>
+                <div onClick={e=>e.stopPropagation()} style={{background:"white",borderRadius:28,padding:"28px 22px",maxWidth:340,width:"100%",boxShadow:"0 20px 60px rgba(0,0,0,.25)",animation:"popIn .25s ease"}}>
+                  <div style={{fontFamily:"'Fredoka One'",fontSize:22,color:"#FF9800",marginBottom:20,textAlign:"center"}}>🌴 Add Adventure</div>
+                  <div style={{marginBottom:14}}>
+                    <div style={{fontSize:11,fontWeight:800,color:"#bbb",letterSpacing:1,marginBottom:8}}>PICK AN ICON</div>
+                    <div style={{display:"flex",flexWrap:"wrap",gap:7}}>
+                      {VACATION_ICONS.map(em=>(
+                        <div key={em} onClick={()=>setNewVacTask(p=>({...p,icon:em}))} style={{width:36,height:36,borderRadius:9,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:19,background:newVacTask.icon===em?"#FF9800":"#F5F5F5",transition:"all .15s"}}>{em}</div>
+                      ))}
+                    </div>
+                  </div>
+                  <div style={{marginBottom:22}}>
+                    <div style={{fontSize:11,fontWeight:800,color:"#bbb",letterSpacing:1,marginBottom:6}}>ACTIVITY NAME</div>
+                    <input value={newVacTask.label} onChange={e=>setNewVacTask(p=>({...p,label:e.target.value}))} placeholder="e.g. Swim in the ocean" maxLength={30} style={{width:"100%",padding:"10px 14px",borderRadius:12,border:"2px solid #FFE0B2",fontFamily:"'Nunito'",fontSize:15,fontWeight:700,outline:"none",boxSizing:"border-box"}}/>
+                  </div>
+                  <div style={{display:"flex",gap:10}}>
+                    <button onClick={()=>setShowAddVacTask(false)} style={{flex:1,padding:12,borderRadius:14,border:"2px solid #eee",background:"white",fontFamily:"'Nunito'",fontWeight:800,fontSize:14,color:"#bbb",cursor:"pointer"}}>Cancel</button>
+                    <button onClick={addVacTask} style={{flex:2,padding:12,borderRadius:14,border:"none",background:newVacTask.label.trim()?"linear-gradient(135deg,#FF9800,#FF5722)":"#EEE",fontFamily:"'Nunito'",fontWeight:800,fontSize:14,color:newVacTask.label.trim()?"white":"#ccc",cursor:newVacTask.label.trim()?"pointer":"not-allowed"}}>Add ✓</button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Vacation Mode Toggle */}
+            <div onClick={toggleVacationMode} style={{
+              background:vacationMode?"linear-gradient(135deg,#FF9800,#FF5722,#E91E63)":"linear-gradient(135deg,#1a1a2e,#16213e)",
+              borderRadius:20,padding:"20px 24px",marginBottom:20,cursor:"pointer",
+              display:"flex",alignItems:"center",justifyContent:"space-between",
+              boxShadow:vacationMode?"0 8px 24px rgba(255,152,0,.4)":"0 4px 16px rgba(0,0,0,.2)",
+              transition:"all .4s",
+            }}>
+              <div>
+                <div style={{fontFamily:"'Fredoka One'",fontSize:22,color:"white",marginBottom:2}}>
+                  {vacationMode?"🌴 Vacation Mode ON":"🏠 Normal Mode"}
+                </div>
+                <div style={{color:"rgba(255,255,255,.6)",fontSize:12,fontWeight:700}}>
+                  {vacationMode?"Tap to go back to school mode":"Tap to start vacation adventures"}
+                </div>
+              </div>
+              <div style={{
+                width:52,height:30,borderRadius:15,padding:"3px",
+                background:vacationMode?"rgba(255,255,255,.3)":"rgba(255,255,255,.1)",
+                display:"flex",alignItems:"center",justifyContent:vacationMode?"flex-end":"flex-start",
+                transition:"all .3s",
+              }}>
+                <div style={{width:24,height:24,borderRadius:12,background:"white",boxShadow:"0 2px 6px rgba(0,0,0,.3)"}}/>
+              </div>
+            </div>
+
+            {/* Vacation task editor */}
+            {vacationMode&&(
+              <div style={{marginBottom:24}}>
+                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12,paddingLeft:4}}>
+                  <div style={{fontFamily:"'Fredoka One'",fontSize:16,color:"#FF9800"}}>🌊 ADVENTURE LIST</div>
+                  <button onClick={()=>setShowAddVacTask(true)} style={{background:"linear-gradient(135deg,#FF9800,#FF5722)",border:"none",borderRadius:12,padding:"8px 14px",fontFamily:"'Nunito'",fontWeight:800,fontSize:13,color:"white",cursor:"pointer"}}>+ Add Adventure</button>
+                </div>
+                <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                  {vacationTasks.map(task=>(
+                    <div key={task.id} style={{background:"white",borderRadius:16,padding:"14px 16px",boxShadow:"0 2px 12px rgba(255,152,0,.1)",border:"2px solid #FFE0B2",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                      <div style={{display:"flex",alignItems:"center",gap:10}}>
+                        <div style={{width:40,height:40,borderRadius:12,background:"linear-gradient(135deg,#FFF3E0,#FFE0B2)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22}}>{task.icon}</div>
+                        <div style={{fontWeight:800,fontSize:14,color:"#333"}}>{task.label}</div>
+                      </div>
+                      <button onClick={()=>deleteVacTask(task.id)} style={{width:30,height:30,borderRadius:8,border:"none",cursor:"pointer",background:"#FFF0F0",color:"#FF6B6B",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
+                    </div>
+                  ))}
+                </div>
+                <div style={{marginTop:12,background:"rgba(255,152,0,.08)",borderRadius:14,padding:"12px 16px",border:"1.5px dashed #FFB74D"}}>
+                  <div style={{fontSize:12,color:"#FF9800",fontWeight:700,textAlign:"center"}}>
+                    ✨ All adventures done = PERFECT DAY explosion!
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {!vacationMode&&(<>
+            <div style={{background:"linear-gradient(135deg,#1a1a2e,#16213e)",borderRadius:20,padding:"20px",marginBottom:20,textAlign:"center"}}>
+              <div style={{fontSize:36,marginBottom:6}}>🔐</div>
+              <div style={{fontFamily:"'Fredoka One'",fontSize:22,color:"white",marginBottom:4}}>Task Manager</div>
+              <div style={{color:"rgba(255,255,255,.5)",fontSize:12,fontWeight:700}}>MANAGE YOUR FAMILY APP</div>
+            </div>
+            <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:20}}>
+              {kids.map(kid=>{ const tasks=getTasksForKid(kid.id),ec=(data.unlocked?.[kid.id]||[]).length; return (
+                <div key={kid.id} style={{flex:1,minWidth:80,background:"white",borderRadius:16,padding:"14px",textAlign:"center",boxShadow:"0 2px 12px rgba(0,0,0,.06)",border:`2px solid ${kid.light}`}}>
+                  <div style={{fontSize:24,marginBottom:4}}>{kid.emoji}</div>
+                  <div style={{fontFamily:"'Fredoka One'",fontSize:16,color:kid.color}}>{kid.name}</div>
+                  <div style={{fontFamily:"'Fredoka One'",fontSize:26,color:kid.color,lineHeight:1}}>{tasks.length}</div>
+                  <div style={{fontSize:10,color:"#bbb",fontWeight:700}}>TASKS</div>
+                  {ec>0&&<div style={{marginTop:4,background:kid.light,borderRadius:6,padding:"2px 6px",fontSize:10,color:kid.color,fontWeight:800}}>{ec} unlocked</div>}
+                </div>
+              ); })}
+            </div>
+            {/* BASE TASKS — toggle per kid */}
+            <div style={{fontFamily:"'Fredoka One'",fontSize:16,color:"#999",marginBottom:12,paddingLeft:4}}>DAILY TASKS</div>
+            <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:24}}>
+              {BASE_TASKS.map(task=>(
+                <div key={task.id} style={{background:"white",borderRadius:18,padding:"14px 16px",boxShadow:"0 2px 12px rgba(0,0,0,.05)",border:"2px solid #F5F5F5"}}>
+                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                    <div style={{display:"flex",alignItems:"center",gap:10,flex:1}}>
+                      <div style={{width:42,height:42,borderRadius:12,background:"#F5F5F5",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22}}>{task.icon}</div>
+                      <div>
+                        <div style={{fontWeight:800,fontSize:14,color:"#333"}}>{task.label}</div>
+                        {task.special&&<div style={{fontSize:11,color:"#C8860A",fontWeight:700}}>Earns money 💰</div>}
+                      </div>
+                    </div>
+                    <div style={{display:"flex",gap:5,flexShrink:0}}>
+                      {kids.map(kid=>{ const off=isBaseDisabled(kid.id,task.id); return (
+                        <button key={kid.id} onClick={()=>toggleBaseTask(kid.id,task.id)} title={`${off?"Enable":"Disable"} for ${kid.name}`} style={{width:36,height:36,borderRadius:9,border:"none",cursor:"pointer",background:off?"#F0F0F0":kid.color,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,transition:"all .2s",boxShadow:off?"none":`0 3px 10px ${kid.color}55`,opacity:off?0.5:1}}>
+                          {off?"✕":kid.emoji}
+                        </button>
+                      ); })}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div style={{fontFamily:"'Fredoka One'",fontSize:16,color:"#999",marginBottom:12,paddingLeft:4}}>EXTRA TASK LIBRARY</div>
+            <div style={{display:"flex",justifyContent:"flex-end",marginBottom:12}}>
+              <button onClick={()=>setShowAddTask(true)} style={{background:"linear-gradient(135deg,#7C5CFC,#FF6B6B)",border:"none",borderRadius:12,padding:"8px 14px",fontFamily:"'Nunito'",fontWeight:800,fontSize:13,color:"white",cursor:"pointer"}}>+ Add Task</button>
+            </div>
+            <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:20}}>
+              {getAllExtraTasks().map(task=>{ const isC=task.id.startsWith("ct_"); return (
+                <div key={task.id} style={{background:"white",borderRadius:18,padding:"14px 16px",boxShadow:"0 2px 12px rgba(0,0,0,.05)",border:isC?"2px solid #EDE8FF":"2px solid #F5F5F5"}}>
+                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                    <div style={{display:"flex",alignItems:"center",gap:10,flex:1,minWidth:0}}>
+                      <div style={{width:42,height:42,borderRadius:12,background:isC?"#EDE8FF":"#F5F5F5",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>{task.icon}</div>
+                      <div style={{minWidth:0}}>
+                        <div style={{fontWeight:800,fontSize:14,color:"#333",display:"flex",alignItems:"center",gap:6}}>{task.label}{isC&&<span style={{fontSize:9,background:"#7C5CFC",color:"white",borderRadius:4,padding:"1px 5px",fontWeight:800}}>CUSTOM</span>}</div>
+                        <div style={{fontSize:11,color:"#bbb"}}>{task.hint}</div>
+                      </div>
+                    </div>
+                    <div style={{display:"flex",gap:5,alignItems:"center",flexShrink:0}}>
+                      {kids.map(kid=>{ const on=isUnlocked(kid.id,task.id); return (
+                        <button key={kid.id} onClick={()=>setUnlockConfirm({kidId:kid.id,taskId:task.id})} title={kid.name} style={{width:36,height:36,borderRadius:9,border:"none",cursor:"pointer",background:on?kid.color:"#F0F0F0",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,transition:"all .2s",boxShadow:on?`0 3px 10px ${kid.color}55`:"none"}}>{on?kid.emoji:"🔒"}</button>
+                      ); })}
+                      {isC&&<button onClick={()=>deleteCustomTask(task.id)} style={{width:30,height:30,borderRadius:8,border:"none",cursor:"pointer",background:"#FFF0F0",color:"#FF6B6B",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>}
+                    </div>
+                  </div>
+                </div>
+              ); })}
+            </div>
+            </>)}
+          </div>
+        )}
+
+      </div>
+      <div style={{height:20}}/>
+    </div>
+  );
 }
 
-initNotifications();
-
-// register service worker for PWA
-if('serviceWorker' in navigator){
-  navigator.serviceWorker.register('sw.js').catch(function(){});
-}
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
 </script>
 </body>
 </html>

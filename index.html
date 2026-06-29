@@ -1842,9 +1842,22 @@ function updateNotifBtn(){
 
 initNotifications();
 
-// register service worker for PWA
+// register service worker for PWA + auto-update check
 if('serviceWorker' in navigator){
-  navigator.serviceWorker.register('sw.js').catch(function(){});
+  navigator.serviceWorker.register('sw.js').then(function(reg){
+    // check for a new version every time the app opens
+    reg.update();
+    reg.addEventListener('updatefound', function(){
+      var newWorker = reg.installing;
+      if(!newWorker) return;
+      newWorker.addEventListener('statechange', function(){
+        if(newWorker.state === 'activated'){
+          // new version is ready — reload once to pick it up
+          window.location.reload();
+        }
+      });
+    });
+  }).catch(function(){});
 }
 </script>
 </body>

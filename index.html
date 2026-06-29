@@ -134,6 +134,7 @@ body{font-family:'Barlow',sans-serif;font-weight:400;background:var(--w);color:v
 .wh-box{margin:0 18px 20px;border:1px solid var(--ln);border-radius:8px;padding:13px 15px;transition:opacity .3s;}
 .wh-top{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:9px;}
 .wh-label{font-size:10px;font-weight:400;letter-spacing:.16em;text-transform:uppercase;color:#777777;}
+.wh-set-group{display:flex;gap:12px;}
 .wh-set{font-size:10px;font-weight:400;color:#777777;cursor:pointer;border-bottom:1px dotted var(--ln);-webkit-tap-highlight-color:transparent;}
 .wh-main-row{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:9px;}
 .wh-big{display:flex;align-items:baseline;gap:3px;}
@@ -151,12 +152,32 @@ body{font-family:'Barlow',sans-serif;font-weight:400;background:var(--w);color:v
 .wh-picker.open{display:block;}
 .wh-picker-lbl{font-size:10px;font-weight:400;letter-spacing:.14em;text-transform:uppercase;color:#777777;margin-bottom:7px;}
 .wh-goal-btns{display:flex;gap:5px;flex-wrap:wrap;}
-.wh-gbtn{border:1px solid var(--ln);background:transparent;font-family:'Bebas Neue',sans-serif;font-size:10px;letter-spacing:1px;color:#777777;width:40px;height:36px;border-radius:4px;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:all .12s;}
-.wh-gbtn.active{background:var(--b);border-color:var(--b);color:var(--w);}
 .wh-great{color:var(--green);}
 .wh-ok{color:var(--orange);}
 .wh-low{color:var(--red);}
 .wh-done{color:#777777;}
+
+/* ── WEEKLY SCHEDULE EDITOR ── */
+.wh-week-rows{display:flex;flex-direction:column;gap:8px;}
+.wh-week-row{display:flex;align-items:center;gap:10px;}
+.wh-week-day{
+  width:38px;flex-shrink:0;
+  font-size:11px;font-weight:600;
+  color:var(--b);
+}
+.wh-week-day.is-off{color:#bbb;}
+.wh-week-hours-row{display:flex;gap:4px;flex:1;flex-wrap:wrap;}
+.wh-hbtn{
+  border:1px solid var(--ln);background:transparent;
+  font-family:'Bebas Neue',sans-serif;font-size:10px;letter-spacing:.5px;
+  color:#777777;width:30px;height:30px;border-radius:4px;
+  cursor:pointer;-webkit-tap-highlight-color:transparent;
+  transition:all .12s;flex-shrink:0;
+}
+.wh-hbtn.active{background:var(--b);border-color:var(--b);color:var(--w);}
+.wh-hbtn.off-btn{font-size:8px;width:34px;}
+.wh-hbtn.off-btn.active{background:#999;border-color:#999;}
+
 
 /* ── TIMELINE ── */
 .tl-head{padding:14px 18px 11px;border-bottom:1px solid var(--ln);display:flex;align-items:center;justify-content:space-between;gap:8px;}
@@ -475,11 +496,40 @@ body{font-family:'Barlow',sans-serif;font-weight:400;background:var(--w);color:v
 .ql-arr{font-size:10px;color:rgba(255,255,255,.2);}
 .ql-faded{opacity:.35;}
 .ql-empty{padding:50px 26px;text-align:center;font-size:10px;font-weight:400;color:rgba(255,255,255,.26);line-height:1.6;}
-.ql-add{display:flex;align-items:center;height:58px;padding:0 20px;flex-shrink:0;border-top:1px solid rgba(255,255,255,.09);background:rgba(0,0,0,.08);}
-.ql-inp{flex:1;border:none;background:transparent;font-family:'Barlow',sans-serif;font-weight:400;font-size:10px;color:#fff;outline:none;caret-color:#fff;}
-.ql-inp::placeholder{color:rgba(255,255,255,.26);}
-.ql-btn{background:rgba(255,255,255,.13);color:#fff;border:none;border-radius:7px;font-size:10px;width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent;flex-shrink:0;}
+.ql-add{display:flex;align-items:center;height:64px;padding:0 20px;flex-shrink:0;border-top:1px solid rgba(255,255,255,.09);background:rgba(0,0,0,.08);}
+.ql-inp{flex:1;border:none;background:transparent;font-family:'Barlow',sans-serif;font-weight:400;font-size:15px;color:#fff;outline:none;caret-color:#fff;}
+.ql-inp::placeholder{color:rgba(255,255,255,.4);}
+.ql-btn{background:rgba(255,255,255,.16);color:#fff;border:none;border-radius:9px;font-size:24px;width:42px;height:42px;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent;flex-shrink:0;}
 .ql-btn:active{background:rgba(255,255,255,.24);}
+
+/* ── BIG "NEW CLIENT" BUTTON — thumb-reachable near top ── */
+.cl-add-bar{
+  padding:4px 20px 14px;
+  flex-shrink:0;
+}
+.cl-add-big-btn{
+  width:100%;
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  background:rgba(255,255,255,.95);
+  color:#9B3D6A;
+  border:none;border-radius:12px;
+  padding:16px 20px;
+  font-family:'Barlow',sans-serif;
+  font-weight:600;font-size:16px;
+  letter-spacing:.02em;
+  cursor:pointer;-webkit-tap-highlight-color:transparent;
+  transition:transform .1s, background .15s;
+  box-shadow:0 2px 10px rgba(0,0,0,.12);
+}
+.cl-add-big-btn:active{
+  background:#fff;
+  transform:scale(.98);
+}
+.cl-add-plus{
+  font-size:22px;
+  font-weight:400;
+  line-height:1;
+}
 
 /* client detail in later wall */
 .ql-avatar{width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:10px;color:rgba(255,255,255,.6);flex-shrink:0;}
@@ -557,7 +607,7 @@ body{font-family:'Barlow',sans-serif;font-weight:400;background:var(--w);color:v
   <div class="wh-box" id="whBox">
     <div class="wh-top">
       <span class="wh-label">Available today</span>
-      <span class="wh-set" onclick="toggleWhPicker()">goal: <span id="whGoalLbl">8</span>h</span>
+      <span class="wh-set" onclick="toggleWeekPicker()">my week &#8250;</span>
     </div>
     <div class="wh-main-row">
       <div class="wh-big"><span class="wh-hours" id="whHours">--</span><span class="wh-unit">h free</span></div>
@@ -565,9 +615,11 @@ body{font-family:'Barlow',sans-serif;font-weight:400;background:var(--w);color:v
     </div>
     <div class="wh-bar-wrap" id="whBarWrap"></div>
     <div class="wh-legend" id="whLegend"></div>
-    <div class="wh-picker" id="whPicker">
-      <div class="wh-picker-lbl">How many hours do you want to work?</div>
-      <div class="wh-goal-btns" id="whGoalBtns"></div>
+
+    <!-- WEEKLY SCHEDULE EDITOR -->
+    <div class="wh-picker" id="whWeekPicker">
+      <div class="wh-picker-lbl">Set your hours for each day</div>
+      <div class="wh-week-rows" id="whWeekRows"></div>
     </div>
   </div>
 </div>
@@ -684,7 +736,7 @@ body{font-family:'Barlow',sans-serif;font-weight:400;background:var(--w);color:v
 <!-- QUEUE WALL (orange) -->
 <div class="world-wall world-queue" id="queueWall">
   <div class="wall-header">
-    <div class="wall-world-name">Queue</div>
+    <div class="wall-world-name">Waiting</div>
     <div class="wall-right">
       <span class="wall-count" id="queueCount"></span>
       <button class="wall-close" onclick="closeQueueWall()">&#x2715;</button>
@@ -692,7 +744,7 @@ body{font-family:'Barlow',sans-serif;font-weight:400;background:var(--w);color:v
   </div>
   <div class="ql-body" id="queueBody"></div>
   <div class="ql-add">
-    <input class="ql-inp" id="queueInp" placeholder="add to queue&#8230;" autocomplete="off">
+    <input class="ql-inp" id="queueInp" placeholder="add someone waiting&#8230;" autocomplete="off">
     <button class="ql-btn" onclick="queueQuickAdd()">&#43;</button>
   </div>
 </div>
@@ -706,10 +758,60 @@ body{font-family:'Barlow',sans-serif;font-weight:400;background:var(--w);color:v
       <button class="wall-close" onclick="closeLaterWall()">&#x2715;</button>
     </div>
   </div>
+  <div class="cl-add-bar">
+    <button class="cl-add-big-btn" onclick="openNewClientModal()">
+      <span class="cl-add-plus">&#43;</span>
+      <span>New Client</span>
+    </button>
+  </div>
   <div class="ql-body" id="laterBody"></div>
   <div class="ql-add">
-    <input class="ql-inp" id="laterInp" placeholder="new client name&#8230;" autocomplete="off">
-    <button class="ql-btn" onclick="laterQuickAdd()">&#43;</button>
+    <input class="ql-inp" id="laterInp" placeholder="or just type a name to quick-add&#8230;" autocomplete="off">
+    <button class="ql-btn" onclick="laterQuickAdd()" title="quick add">&#43;</button>
+  </div>
+</div>
+
+<!-- CLIENT EDIT MODAL -->
+<div class="modal-overlay" id="clientModalOverlay" onclick="closeClientModalBg(event)">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Client</div>
+    <div class="modal-sub" id="clientModalSub"></div>
+
+    <div class="f-group"><div class="f-label">Name</div><input class="f-input" id="ccName" placeholder="João Silva" autocomplete="off"></div>
+    <div class="f-group"><div class="f-label">Phone</div><input class="f-input" id="ccPhone" type="tel" placeholder="(11) 9 9999-9999"></div>
+    <div class="f-group"><div class="f-label">Address</div><input class="f-input" id="ccAddress" placeholder="123 Oak St, Orlando FL" autocomplete="off"></div>
+
+    <div class="f-group">
+      <div class="f-label">Visit frequency</div>
+      <div class="status-grid" id="ccFreqGrid">
+        <button class="s-btn active" data-freq="weekly" onclick="setCcFreq('weekly',this)">Weekly</button>
+        <button class="s-btn" data-freq="biweekly" onclick="setCcFreq('biweekly',this)">Bi-weekly</button>
+        <button class="s-btn" data-freq="monthly" onclick="setCcFreq('monthly',this)">Monthly</button>
+        <button class="s-btn" data-freq="onetime" onclick="setCcFreq('onetime',this)">One-time</button>
+      </div>
+    </div>
+
+    <div class="f-group">
+      <div class="f-label">Charges per visit?</div>
+      <div class="status-grid">
+        <button class="s-btn active" id="ccChargeYesBtn" onclick="setCcChargeMode(true)">Fixed amount</button>
+        <button class="s-btn" id="ccChargeNoBtn" onclick="setCcChargeMode(false)">After the job</button>
+      </div>
+    </div>
+
+    <div class="f-group" id="ccAmountGroup">
+      <div class="f-label">Amount per visit ($)</div>
+      <input class="f-input" id="ccAmount" type="number" inputmode="decimal" placeholder="80" min="0" step="0.01">
+    </div>
+
+    <div class="f-group"><div class="f-label">Notes</div><input class="f-input" id="ccNotes" placeholder="gate code, dog in yard, etc." autocomplete="off"></div>
+
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="closeClientModal()">cancel</button>
+      <button class="modal-save" onclick="saveClientModal()">save client</button>
+    </div>
+    <button class="modal-del-btn" id="ccDelBtn" onclick="deleteClientModal()">delete client</button>
   </div>
 </div>
 
@@ -721,7 +823,7 @@ body{font-family:'Barlow',sans-serif;font-weight:400;background:var(--w);color:v
   </div>
   <div class="side-tab side-tab-queue" onclick="openQueueWall()">
     <span class="side-tab-badge" id="queueBadge"></span>
-    <span class="side-tab-lbl">queue</span>
+    <span class="side-tab-lbl">waiting</span>
   </div>
   <div class="side-tab side-tab-later" onclick="openLaterWall()">
     <span class="side-tab-badge" id="laterBadge"></span>
@@ -755,7 +857,18 @@ var calY, calM;
 var mStatus     = 'working';
 var mEvId       = null;
 var slotViewMode= 'day';
-var whGoal      = parseInt(localStorage.getItem('ag6_whgoal') || '8');
+// weekly schedule: {0:{start:8,hours:8}, 1:{...}, ... 6:{...}} where 0=Sunday
+var DEFAULT_WEEK = {
+  0:{start:8,hours:0},  // Sun off by default
+  1:{start:8,hours:8},  // Mon
+  2:{start:8,hours:8},  // Tue
+  3:{start:8,hours:8},  // Wed
+  4:{start:8,hours:8},  // Thu
+  5:{start:8,hours:8},  // Fri
+  6:{start:8,hours:4}   // Sat
+};
+var whWeek = JSON.parse(localStorage.getItem('ag6_whweek') || 'null') || DEFAULT_WEEK;
+var WEEK_DAY_NAMES=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 var whTimer     = null;
 var cfEditId    = null;
 
@@ -798,7 +911,6 @@ function dismissSplash(){
   calY=now.getFullYear();calM=now.getMonth();
   document.getElementById('todayChip').textContent=now.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
   document.getElementById('mDate').value=selDate;
-  document.getElementById('whGoalLbl').textContent=whGoal;
   document.getElementById('queueInp').addEventListener('keydown',function(ev){if(ev.key==='Enter')queueQuickAdd();});
   document.getElementById('laterInp').addEventListener('keydown',function(ev){if(ev.key==='Enter')laterQuickAdd();});
   document.getElementById('dwAddInp').addEventListener('keydown',function(ev){if(ev.key==='Enter')dwQuickAdd();});
@@ -1005,10 +1117,25 @@ function renderSummary(){
 // ── WORKING HOURS ──
 function renderWorkingHours(){
   var today=todayDS(),isToday=selDate===today;
-  document.getElementById('whBox').style.opacity=isToday?'1':'0.42';
-  document.getElementById('whGoalLbl').textContent=whGoal;
+  document.getElementById('whBox').style.opacity='1';
+  var d=new Date(selDate+'T12:00');
+  var dow=d.getDay(); // 0=Sun..6=Sat
+  var daySchedule=whWeek[dow]||{start:8,hours:0};
+  var goalH=daySchedule.hours, startH=daySchedule.start;
+
   var now=new Date(),nowMins=now.getHours()*60+now.getMinutes();
-  var dayStart=8*60,dayEnd=dayStart+whGoal*60,totalMins=whGoal*60;
+  var dayStart=startH*60,dayEnd=dayStart+goalH*60,totalMins=Math.max(1,goalH*60);
+
+  if(goalH<=0){
+    // day off
+    document.getElementById('whHours').textContent='OFF';
+    document.getElementById('whHours').className='wh-hours wh-done';
+    document.getElementById('whRight').innerHTML='<div class="wh-right-row" style="color:#777777;font-size:13px">no work scheduled '+WEEK_DAY_NAMES[dow]+'</div>';
+    document.getElementById('whBarWrap').innerHTML='<div class="wh-seg" style="width:100%;background:var(--g)"></div>';
+    document.getElementById('whLegend').innerHTML='<div class="wh-leg">day off \u2014 tap "my week" to change</div>';
+    return;
+  }
+
   var jobEvts=events.filter(function(ev){return ev.date===selDate&&ev.status!=='personal'&&ev.status!=='busy';});
   var totalBooked=0;
   jobEvts.forEach(function(ev){
@@ -1047,18 +1174,59 @@ function renderWorkingHours(){
     '<div class="wh-leg"><div class="wh-ldot" style="background:var(--green)"></div>free: '+fmt(freeAhead)+'</div>'+
     '<div class="wh-leg"><div class="wh-ldot" style="background:var(--orange)"></div>booked: '+fmt(bookedAhead)+'</div>':
     '<div class="wh-leg">viewing another day</div>';
-  document.querySelectorAll('.wh-gbtn').forEach(function(btn){btn.classList.toggle('active',parseInt(btn.dataset.h)===whGoal);});
 }
-function toggleWhPicker(){var p=document.getElementById('whPicker');p.classList.toggle('open');if(p.classList.contains('open'))buildGoalBtns();}
-function buildGoalBtns(){
-  var wrap=document.getElementById('whGoalBtns');wrap.innerHTML='';
-  for(var h=4;h<=12;h++){
-    var btn=mkEl('button','wh-gbtn');btn.textContent=h;btn.dataset.h=h;
-    if(h===whGoal)btn.classList.add('active');
-    (function(hh){btn.onclick=function(){whGoal=hh;localStorage.setItem('ag6_whgoal',hh);document.getElementById('whGoalLbl').textContent=hh;buildGoalBtns();renderWorkingHours();setTimeout(function(){document.getElementById('whPicker').classList.remove('open');},400);};})(h);
-    wrap.appendChild(btn);
+
+function fmtHour12(h){
+  var ampm=h>=12?'pm':'am';
+  var h12=h>12?h-12:(h===0?12:h);
+  return h12+ampm;
+}
+
+function toggleWeekPicker(){
+  var p=document.getElementById('whWeekPicker');
+  p.classList.toggle('open');
+  if(p.classList.contains('open'))buildWeekRows();
+}
+
+function buildWeekRows(){
+  var wrap=document.getElementById('whWeekRows');wrap.innerHTML='';
+  for(var dow=0; dow<7; dow++){
+    (function(d){
+      var sched=whWeek[d]||{start:8,hours:0};
+      var row=mkDiv('wh-week-row');
+      var lbl=mkDiv('wh-week-day'+(sched.hours<=0?' is-off':''));
+      lbl.textContent=WEEK_DAY_NAMES[d];
+      row.appendChild(lbl);
+
+      var hoursRow=mkDiv('wh-week-hours-row');
+      // OFF button
+      var offBtn=mkEl('button','wh-hbtn off-btn'+(sched.hours<=0?' active':''));
+      offBtn.textContent='OFF';
+      offBtn.onclick=function(){
+        whWeek[d]={start:whWeek[d]?whWeek[d].start:8, hours:0};
+        persistWeek(); buildWeekRows(); renderWorkingHours();
+      };
+      hoursRow.appendChild(offBtn);
+      // hour buttons 2,4,6,8,10,12
+      [2,4,6,8,10,12].forEach(function(h){
+        var btn=mkEl('button','wh-hbtn'+(sched.hours===h?' active':''));
+        btn.textContent=h;
+        btn.onclick=function(){
+          whWeek[d]={start:whWeek[d]?whWeek[d].start:8, hours:h};
+          persistWeek(); buildWeekRows(); renderWorkingHours();
+        };
+        hoursRow.appendChild(btn);
+      });
+      row.appendChild(hoursRow);
+      wrap.appendChild(row);
+    })(dow);
   }
 }
+
+function persistWeek(){
+  localStorage.setItem('ag6_whweek', JSON.stringify(whWeek));
+}
+
 function startWhTimer(){clearInterval(whTimer);renderWorkingHours();whTimer=setInterval(renderWorkingHours,60000);}
 
 // ── TIMELINE ──
@@ -1369,7 +1537,7 @@ function renderQueueWall(){
   var pending=queueJobs.filter(function(j){return !j.done;}).length;
   document.getElementById('queueCount').textContent=pending?pending+' pending':'all done';
   body.innerHTML='';
-  if(!queueJobs.length){body.innerHTML='<div class="ql-empty">no jobs in queue<br>add one below</div>';return;}
+  if(!queueJobs.length){body.innerHTML='<div class="ql-empty">no one waiting yet<br>add someone below</div>';return;}
   var sorted=queueJobs.filter(function(j){return !j.done;}).concat(queueJobs.filter(function(j){return j.done;}));
   sorted.forEach(function(j,i){
     var row=mkDiv('ql-row'+(j.done?' ql-faded':''));
@@ -1398,13 +1566,19 @@ function renderLaterWall(){
   document.getElementById('laterCount').textContent=clients.length?clients.length+' client'+(clients.length!==1?'s':''):'empty';
   body.innerHTML='';
   if(!clients.length){body.innerHTML='<div class="ql-empty">no clients yet<br>add one below</div>';return;}
+  var FREQ_LBL={weekly:'Weekly',biweekly:'Bi-weekly',monthly:'Monthly',onetime:'One-time'};
   var sorted=[].concat(clients).sort(function(a,b){return a.name.localeCompare(b.name);});
   sorted.forEach(function(c,i){
     var row=mkDiv('ql-row');
     var av=mkDiv('ql-avatar');av.textContent=initials(c.name);
     var info=mkDiv('ql-info');
     var nm=mkDiv('ql-name');nm.textContent=c.name;
-    var meta=mkDiv('ql-meta');meta.textContent=[c.phone,c.job,c.ref?'via '+c.ref:''].filter(Boolean).join(' \u00b7 ');
+    var metaParts=[];
+    if(c.freq) metaParts.push(FREQ_LBL[c.freq]||c.freq);
+    if(c.hasFixedAmount!==false && c.amount) metaParts.push('$'+c.amount+'/visit');
+    else if(c.hasFixedAmount===false) metaParts.push('charges after job');
+    if(c.phone) metaParts.push(c.phone);
+    var meta=mkDiv('ql-meta');meta.textContent=metaParts.join(' \u00b7 ');
     info.appendChild(nm);if(meta.textContent)info.appendChild(meta);
     var arr=mkDiv('ql-arr');arr.textContent='\u203a';
     row.appendChild(av);row.appendChild(info);row.appendChild(arr);
@@ -1414,25 +1588,112 @@ function renderLaterWall(){
 }
 function laterQuickAdd(){
   var inp=document.getElementById('laterInp'),name=inp.value.trim();if(!name)return;
-  clients.push({id:Date.now()+'',name:name,phone:'',job:'',ref:'',notes:''});
+  clients.push({id:Date.now()+'',name:name,phone:'',address:'',freq:'weekly',hasFixedAmount:true,amount:'',notes:''});
   inp.value='';persist();renderLaterWall();updateSideTabs();
 }
+
+// ── CLIENT MODAL ──
+var ccFreq = 'weekly';
+var ccHasAmount = true;
+var ccEditId = null;
+
 function openClientEdit(id){
   var c=clients.find(function(x){return x.id===id;});if(!c)return;
-  cfEditId=id;
-  // reuse modal for quick edit
-  document.getElementById('modalTitle').textContent='Client';
-  document.getElementById('modalSub').textContent=c.ref?'via '+c.ref:'';
-  document.getElementById('mName').value=c.name;
-  document.getElementById('mPhone').value=c.phone||'';
-  document.getElementById('mDesc').value=[c.job,c.notes].filter(Boolean).join(' \u00b7 ');
-  document.getElementById('mDate').value=selDate;
-  document.getElementById('mStart').value='08:00';document.getElementById('mEnd').value='10:00';
-  mStatus='working';
-  document.querySelectorAll('.s-btn').forEach(function(b){b.classList.toggle('active',b.dataset.s==='working');});
-  document.getElementById('modalDelBtn').style.display='block';
-  document.getElementById('modalSaveBtn').textContent='book this client';
-  document.getElementById('modalOverlay').classList.add('open');
+  ccEditId=id;
+  document.getElementById('clientModalSub').textContent = 'edit client details';
+  document.getElementById('ccName').value=c.name||'';
+  document.getElementById('ccPhone').value=c.phone||'';
+  document.getElementById('ccAddress').value=c.address||'';
+  document.getElementById('ccNotes').value=c.notes||'';
+  document.getElementById('ccAmount').value=c.amount||'';
+
+  ccFreq = c.freq || 'weekly';
+  document.querySelectorAll('#ccFreqGrid .s-btn').forEach(function(b){
+    b.classList.toggle('active', b.dataset.freq===ccFreq);
+  });
+
+  ccHasAmount = c.hasFixedAmount !== false;
+  setCcChargeMode(ccHasAmount, true);
+
+  document.getElementById('ccDelBtn').style.display='block';
+  document.getElementById('clientModalOverlay').classList.add('open');
+}
+
+function openNewClientModal(){
+  ccEditId = null;
+  document.getElementById('clientModalSub').textContent = 'add a new client';
+  document.getElementById('ccName').value='';
+  document.getElementById('ccPhone').value='';
+  document.getElementById('ccAddress').value='';
+  document.getElementById('ccNotes').value='';
+  document.getElementById('ccAmount').value='';
+  ccFreq='weekly';
+  document.querySelectorAll('#ccFreqGrid .s-btn').forEach(function(b){b.classList.toggle('active',b.dataset.freq==='weekly');});
+  setCcChargeMode(true, true);
+  document.getElementById('ccDelBtn').style.display='none';
+  document.getElementById('clientModalOverlay').classList.add('open');
+  setTimeout(function(){document.getElementById('ccName').focus();},250);
+}
+
+function setCcFreq(f, btn){
+  ccFreq = f;
+  document.querySelectorAll('#ccFreqGrid .s-btn').forEach(function(b){b.classList.remove('active');});
+  btn.classList.add('active');
+}
+
+function setCcChargeMode(hasAmount, skipToggleClass){
+  ccHasAmount = hasAmount;
+  document.getElementById('ccChargeYesBtn').classList.toggle('active', hasAmount);
+  document.getElementById('ccChargeNoBtn').classList.toggle('active', !hasAmount);
+  document.getElementById('ccAmountGroup').style.display = hasAmount ? 'block' : 'none';
+}
+
+function closeClientModal(){
+  document.getElementById('clientModalOverlay').classList.remove('open');
+  ccEditId=null;
+}
+function closeClientModalBg(evt){
+  if(evt.target===document.getElementById('clientModalOverlay')) closeClientModal();
+}
+
+function saveClientModal(){
+  var nameEl=document.getElementById('ccName');
+  var name=nameEl.value.trim();
+  if(!name){nameEl.classList.add('err');nameEl.focus();return;}
+  nameEl.classList.remove('err');
+
+  var fields={
+    name:name,
+    phone:document.getElementById('ccPhone').value.trim(),
+    address:document.getElementById('ccAddress').value.trim(),
+    freq:ccFreq,
+    hasFixedAmount:ccHasAmount,
+    amount: ccHasAmount ? document.getElementById('ccAmount').value.trim() : '',
+    notes:document.getElementById('ccNotes').value.trim()
+  };
+
+  if(ccEditId){
+    var idx=clients.findIndex(function(c){return c.id===ccEditId;});
+    if(idx>-1) clients[idx]=Object.assign({},clients[idx],fields);
+  } else {
+    clients.push(Object.assign({id:Date.now()+''},fields));
+  }
+  persist();
+  closeClientModal();
+  renderLaterWall();
+  updateSideTabs();
+}
+
+function deleteClientModal(){
+  if(!ccEditId)return;
+  var c=clients.find(function(x){return x.id===ccEditId;});
+  if(c && confirm('Delete "'+c.name+'"?')){
+    clients=clients.filter(function(x){return x.id!==ccEditId;});
+    persist();
+    closeClientModal();
+    renderLaterWall();
+    updateSideTabs();
+  }
 }
 
 function updateSideTabs(){

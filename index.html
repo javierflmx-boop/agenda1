@@ -502,7 +502,31 @@ body{font-family:'Barlow',sans-serif;font-weight:400;background:var(--w);color:v
 .ql-btn{background:rgba(255,255,255,.16);color:#fff;border:none;border-radius:9px;font-size:24px;width:42px;height:42px;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent;flex-shrink:0;}
 .ql-btn:active{background:rgba(255,255,255,.24);}
 
-/* ── CLIENT COLOR PICKER ── */
+/* ── CLIENT SUGGESTIONS DROPDOWN ── */
+.client-suggestions{
+  position:absolute;left:0;right:0;top:100%;
+  background:var(--w);
+  border:1px solid var(--ln);
+  border-radius:0 0 8px 8px;
+  z-index:300;
+  display:none;
+  max-height:200px;overflow-y:auto;
+  box-shadow:0 6px 20px rgba(0,0,0,.1);
+}
+.client-suggestions.open{display:block;}
+.cs-row{
+  display:flex;align-items:center;gap:12px;
+  padding:12px 14px;
+  cursor:pointer;-webkit-tap-highlight-color:transparent;
+  border-bottom:1px solid var(--g2);
+  transition:background .1s;
+}
+.cs-row:last-child{border-bottom:none;}
+.cs-row:active{background:var(--g2);}
+.cs-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.cs-name{font-size:15px;font-weight:400;flex:1;}
+.cs-meta{font-size:11px;color:var(--mu);font-weight:400;}
+
 .cc-color-row{display:flex;gap:10px;flex-wrap:wrap;padding:4px 0;}
 .cc-color-dot{
   width:32px;height:32px;border-radius:50%;
@@ -685,7 +709,11 @@ body{font-family:'Barlow',sans-serif;font-weight:400;background:var(--w);color:v
         <button class="s-btn" data-s="busy" onclick="setMS('busy',this)">busy</button>
       </div>
     </div>
-    <div class="f-group"><div class="f-label">Client / Title</div><input class="f-input" id="mName" placeholder="Jo&#227;o Silva" autocomplete="off"></div>
+    <div class="f-group" style="position:relative;">
+      <div class="f-label">Client / Title</div>
+      <input class="f-input" id="mName" placeholder="João Silva" autocomplete="off" oninput="showClientSuggestions(this.value)" onfocus="showClientSuggestions(this.value)">
+      <div class="client-suggestions" id="clientSuggestions"></div>
+    </div>
     <div class="f-group"><div class="f-label">Phone</div><input class="f-input" id="mPhone" type="tel" placeholder="(11) 9 9999-9999"></div>
     <div class="f-group"><div class="f-label">Description</div><input class="f-input" id="mDesc" placeholder="install bathroom faucet" autocomplete="off"></div>
     <div class="f-group"><div class="f-label">Date</div><input class="f-input" id="mDate" type="date"></div>
@@ -1442,7 +1470,56 @@ function openModalEdit(evId){
   document.getElementById('modalSaveBtn').textContent='update event';
   document.getElementById('modalOverlay').classList.add('open');
 }
-function closeModal(){document.getElementById('modalOverlay').classList.remove('open');mEvId=null;}
+function closeModal(){
+  document.getElementById('modalOverlay').classList.remove('open');
+  hideClientSuggestions();
+  mEvId=null;
+}
+
+function showClientSuggestions(val){
+  var box = document.getElementById('clientSuggestions');
+  if(!clients.length){box.classList.remove('open');return;}
+  var q = (val||'').toLowerCase().trim();
+  // show all clients if empty, or filter by match
+  var matches = clients.filter(function(c){
+    return !q || c.name.toLowerCase().indexOf(q) !== -1;
+  });
+  if(!matches.length){box.classList.remove('open');return;}
+  box.innerHTML = '';
+  matches.forEach(function(c){
+    var row = mkDiv('cs-row');
+    var dot = mkDiv('cs-dot');
+    dot.style.background = clientColor(c.name);
+    var name = mkDiv('cs-name');name.textContent = c.name;
+    var meta = mkDiv('cs-meta');
+    var parts = [];
+    if(c.phone) parts.push(c.phone);
+    if(c.freq) parts.push({weekly:'Weekly',biweekly:'Bi-weekly',monthly:'Monthly',onetime:'One-time'}[c.freq]||c.freq);
+    if(c.hasFixedAmount!==false&&c.amount) parts.push('$'+c.amount+'/visit');
+    meta.textContent = parts.join(' · ');
+    row.appendChild(dot);row.appendChild(name);
+    if(parts.length) row.appendChild(meta);
+    (function(client){
+      row.onclick = function(){
+        document.getElementById('mName').value = client.name;
+        if(client.phone) document.getElementById('mPhone').value = client.phone;
+        hideClientSuggestions();
+      };
+    })(c);
+    box.appendChild(row);
+  });
+  box.classList.add('open');
+}
+
+function hideClientSuggestions(){
+  var box = document.getElementById('clientSuggestions');
+  if(box) box.classList.remove('open');
+}
+
+// close suggestions when tapping outside
+document.addEventListener('click', function(e){
+  if(!e.target.closest || !e.target.closest('#mName')) hideClientSuggestions();
+}, true);
 function closeBg(evt){if(evt.target===document.getElementById('modalOverlay'))closeModal();}
 function setMS(s,btn){mStatus=s;document.querySelectorAll('.s-btn').forEach(function(b){b.classList.toggle('active',b===btn);});}
 function deleteFromModal(){

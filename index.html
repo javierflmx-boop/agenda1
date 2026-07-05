@@ -879,6 +879,30 @@ var SC={working:'var(--green)',waiting:'var(--orange)',late:'var(--red)',urgent:
 var SL={working:'Working',waiting:'Waiting',late:'Late',urgent:'Urgent',personal:'Personal',busy:'Busy'};
 var BG_CYCLE=['bg-black','bg-white','bg-mango','bg-black','bg-black','bg-white'];
 
+// ── CLIENT COLOR PALETTE — each client gets a unique color ──
+var CLIENT_COLORS=[
+  '#3D8B5E', // forest green
+  '#C8571A', // burnt orange
+  '#5B7FA6', // steel blue
+  '#9B3D6A', // deep rose
+  '#7A6A3D', // warm olive
+  '#4A7A6B', // teal green
+  '#B83C2B', // deep red
+  '#7A5BA6', // purple
+  '#A67A3D', // amber brown
+  '#3D6AA6', // blue
+  '#A6543D', // rust
+  '#5BA65B', // lime green
+];
+
+// returns a consistent color for a client name
+function clientColor(name){
+  var sorted = [].concat(clients).sort(function(a,b){return a.name.localeCompare(b.name);});
+  var idx = sorted.findIndex(function(c){return c.name===name;});
+  if(idx < 0) idx = 0;
+  return CLIENT_COLORS[idx % CLIENT_COLORS.length];
+}
+
 // ── UTILS ──
 function toDS(d){return d.toISOString().split('T')[0];}
 function todayDS(){return toDS(new Date());}
@@ -963,11 +987,12 @@ function renderFilterChips(){
     }
     names.forEach(function(n){
       var isActive = calFilterValue===n;
+      var color = clientColor(n);
       var chip = mkDiv('filter-chip' + (isActive ? ' active' : ''));
       chip.textContent = n;
-      chip.style.borderColor = '#9B3D6A';
-      chip.style.color = isActive ? '#fff' : '#9B3D6A';
-      if(isActive) chip.style.background = '#9B3D6A';
+      chip.style.borderColor = color;
+      chip.style.color = isActive ? '#fff' : color;
+      if(isActive) chip.style.background = color;
       chip.onclick = function(){
         calFilterValue = calFilterValue===n ? null : n;
         renderFilterChips(); renderCal();
@@ -1028,26 +1053,39 @@ function renderCal(){
     if(useFilterView){
       // ── FILTER VIEW: fill bar + hour label ──
       var dayEvts = getCalDayEvents(ds);
+      // all events for this day (unfiltered) for fading logic
+      var allDayEvts = events.filter(function(ev){return ev.date===ds;});
       var totalMins = dayEvts.reduce(function(acc,ev){return acc + minsOf(ev.start,ev.end);},0);
       var totalH = totalMins/60;
       var pct = Math.min(100, (totalH/10)*100);
+
+      // fade days that don't match the active filter
+      var hasAnyEvts = allDayEvts.length > 0;
+      var hasMatchEvts = dayEvts.length > 0;
+      if(hasAnyEvts && !hasMatchEvts && calFilterValue){
+        // day has events but not for this client/status — fade it
+        e.style.opacity = '0.25';
+      }
 
       if(totalH>0){
         var fill = mkDiv('day-fillbar');
         fill.style.height = pct+'%';
         var color;
         if(calFilterMode==='status' && dayEvts.length) color = SC[dayEvts[0].status]||'#3D8B5E';
-        else if(calFilterMode==='client') color='#9B3D6A';
+        else if(calFilterMode==='client' && dayEvts.length) color = clientColor(dayEvts[0].name);
         else if(calFilterMode==='hours'){
           var intensity=Math.min(1,totalH/8);
           fill.style.background='rgba(61,139,94,'+(0.15+intensity*0.55)+')';
         }
         if(calFilterMode!=='hours'){
-          fill.style.background=cssColorToRgba(color,0.3);
+          // active filter = full vivid color, no filter = softer tint
+          var alpha = calFilterValue ? 0.55 : 0.32;
+          fill.style.background=cssColorToRgba(color, alpha);
         }
         e.appendChild(fill);
 
         var hl=mkDiv('day-hourlbl');
+        hl.style.color = color ? cssColorToRgba(color, 0.9) : 'var(--b)';
         hl.textContent=(totalH%1===0?totalH:totalH.toFixed(1))+'h';
         e.appendChild(hl);
         e.classList.add('has-events');
@@ -1098,8 +1136,11 @@ function cssColorToRgba(cssVarOrHex, alpha){
 function renderSummary(){
   var dayEvts=events.filter(function(ev){return ev.date===selDate;});
   var busyMins=dayEvts.reduce(function(acc,ev){return acc+minsOf(ev.start,ev.end);},0);
-  var freeMins=Math.max(0,(WORK_E-WORK_S)*60-busyMins);
   var d=new Date(selDate+'T12:00');
+  var dow=d.getDay();
+  var daySchedule=whWeek[dow]||{start:8,hours:0};
+  var scheduledMins=daySchedule.hours*60;
+  var freeMins=Math.max(0,scheduledMins-busyMins);
   var dateStr=d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
   var counts={};dayEvts.forEach(function(ev){counts[ev.status]=(counts[ev.status]||0)+1;});
   var badges=Object.keys(SC).filter(function(s){return counts[s];}).map(function(s){
@@ -1856,6 +1897,11 @@ if('serviceWorker' in navigator){
           window.location.reload();
         }
       });
+    });
+    // also check whenever the app is brought back to foreground
+    // (covers iOS PWAs that don't always re-check on launch)
+    document.addEventListener('visibilitychange', function(){
+      if(document.visibilityState === 'visible') reg.update();
     });
   }).catch(function(){});
 }

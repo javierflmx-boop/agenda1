@@ -502,7 +502,18 @@ body{font-family:'Barlow',sans-serif;font-weight:400;background:var(--w);color:v
 .ql-btn{background:rgba(255,255,255,.16);color:#fff;border:none;border-radius:9px;font-size:24px;width:42px;height:42px;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent;flex-shrink:0;}
 .ql-btn:active{background:rgba(255,255,255,.24);}
 
-/* ── BIG "NEW CLIENT" BUTTON — thumb-reachable near top ── */
+/* ── CLIENT COLOR PICKER ── */
+.cc-color-row{display:flex;gap:10px;flex-wrap:wrap;padding:4px 0;}
+.cc-color-dot{
+  width:32px;height:32px;border-radius:50%;
+  cursor:pointer;-webkit-tap-highlight-color:transparent;
+  border:3px solid transparent;
+  transition:transform .12s, border-color .12s;
+  flex-shrink:0;
+}
+.cc-color-dot:active{transform:scale(.88);}
+.cc-color-dot.selected{border-color:var(--b);transform:scale(1.15);}
+
 .cl-add-bar{
   padding:4px 20px 14px;
   flex-shrink:0;
@@ -783,6 +794,11 @@ body{font-family:'Barlow',sans-serif;font-weight:400;background:var(--w);color:v
     <div class="f-group"><div class="f-label">Address</div><input class="f-input" id="ccAddress" placeholder="123 Oak St, Orlando FL" autocomplete="off"></div>
 
     <div class="f-group">
+      <div class="f-label">Color — shows on calendar & timeline</div>
+      <div class="cc-color-row" id="ccColorRow"></div>
+    </div>
+
+    <div class="f-group">
       <div class="f-label">Visit frequency</div>
       <div class="status-grid" id="ccFreqGrid">
         <button class="s-btn active" data-freq="weekly" onclick="setCcFreq('weekly',this)">Weekly</button>
@@ -895,10 +911,13 @@ var CLIENT_COLORS=[
   '#5BA65B', // lime green
 ];
 
-// returns a consistent color for a client name
+// returns a consistent color for a client name — uses saved color if available
 function clientColor(name){
+  var c = clients.find(function(x){return x.name===name;});
+  if(c && c.color) return c.color;
+  // fallback: auto-assign by alphabetical index
   var sorted = [].concat(clients).sort(function(a,b){return a.name.localeCompare(b.name);});
-  var idx = sorted.findIndex(function(c){return c.name===name;});
+  var idx = sorted.findIndex(function(x){return x.name===name;});
   if(idx < 0) idx = 0;
   return CLIENT_COLORS[idx % CLIENT_COLORS.length];
 }
@@ -1611,7 +1630,10 @@ function renderLaterWall(){
   var sorted=[].concat(clients).sort(function(a,b){return a.name.localeCompare(b.name);});
   sorted.forEach(function(c,i){
     var row=mkDiv('ql-row');
-    var av=mkDiv('ql-avatar');av.textContent=initials(c.name);
+    var av=mkDiv('ql-avatar');
+    av.style.background=clientColor(c.name)+'33';
+    av.style.color=clientColor(c.name);
+    av.textContent=initials(c.name);
     var info=mkDiv('ql-info');
     var nm=mkDiv('ql-name');nm.textContent=c.name;
     var metaParts=[];
@@ -1637,6 +1659,22 @@ function laterQuickAdd(){
 var ccFreq = 'weekly';
 var ccHasAmount = true;
 var ccEditId = null;
+var ccColor = CLIENT_COLORS[0];
+
+function buildColorPicker(selected){
+  var row = document.getElementById('ccColorRow');
+  row.innerHTML = '';
+  CLIENT_COLORS.forEach(function(color){
+    var dot = mkDiv('cc-color-dot' + (color===selected?' selected':''));
+    dot.style.background = color;
+    dot.onclick = function(){
+      ccColor = color;
+      row.querySelectorAll('.cc-color-dot').forEach(function(d){d.classList.remove('selected');});
+      dot.classList.add('selected');
+    };
+    row.appendChild(dot);
+  });
+}
 
 function openClientEdit(id){
   var c=clients.find(function(x){return x.id===id;});if(!c)return;
@@ -1647,6 +1685,9 @@ function openClientEdit(id){
   document.getElementById('ccAddress').value=c.address||'';
   document.getElementById('ccNotes').value=c.notes||'';
   document.getElementById('ccAmount').value=c.amount||'';
+
+  ccColor = c.color || clientColor(c.name);
+  buildColorPicker(ccColor);
 
   ccFreq = c.freq || 'weekly';
   document.querySelectorAll('#ccFreqGrid .s-btn').forEach(function(b){
@@ -1668,6 +1709,8 @@ function openNewClientModal(){
   document.getElementById('ccAddress').value='';
   document.getElementById('ccNotes').value='';
   document.getElementById('ccAmount').value='';
+  ccColor = CLIENT_COLORS[clients.length % CLIENT_COLORS.length];
+  buildColorPicker(ccColor);
   ccFreq='weekly';
   document.querySelectorAll('#ccFreqGrid .s-btn').forEach(function(b){b.classList.toggle('active',b.dataset.freq==='weekly');});
   setCcChargeMode(true, true);
@@ -1710,7 +1753,8 @@ function saveClientModal(){
     freq:ccFreq,
     hasFixedAmount:ccHasAmount,
     amount: ccHasAmount ? document.getElementById('ccAmount').value.trim() : '',
-    notes:document.getElementById('ccNotes').value.trim()
+    notes:document.getElementById('ccNotes').value.trim(),
+    color:ccColor
   };
 
   if(ccEditId){

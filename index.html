@@ -502,7 +502,63 @@ body{font-family:'Barlow',sans-serif;font-weight:400;background:var(--w);color:v
 .ql-btn{background:rgba(255,255,255,.16);color:#fff;border:none;border-radius:9px;font-size:24px;width:42px;height:42px;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent;flex-shrink:0;}
 .ql-btn:active{background:rgba(255,255,255,.24);}
 
-/* ── CLIENT SUGGESTIONS DROPDOWN ── */
+/* ── DONE WALL — grouped by client ── */
+.dw-group-header{
+  display:flex;align-items:center;gap:10px;
+  padding:18px 20px 8px;
+  border-bottom:1px solid rgba(255,255,255,.07);
+}
+.dw-group-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.dw-group-name{
+  font-family:'Bebas Neue',sans-serif;
+  font-size:20px;letter-spacing:1px;color:#fff;flex:1;
+}
+.dw-group-count{font-size:11px;color:rgba(255,255,255,.35);font-weight:400;}
+.dw-group-row{
+  display:flex;align-items:center;gap:12px;
+  padding:12px 20px 12px 40px;
+  border-bottom:1px solid rgba(255,255,255,.05);
+  cursor:pointer;-webkit-tap-highlight-color:transparent;
+}
+.dw-group-row:active{background:rgba(255,255,255,.05);}
+.dw-row-info{flex:1;min-width:0;}
+.dw-row-title{font-size:14px;font-weight:400;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.dw-row-meta{font-size:11px;color:rgba(255,255,255,.38);margin-top:2px;}
+.dw-row-arr{font-size:16px;color:rgba(255,255,255,.2);}
+
+/* ── CLIENT PROFILE ── */
+.cp-info-box{
+  margin:14px 20px;padding:14px;
+  background:rgba(255,255,255,.06);
+  border-radius:10px;
+}
+.cp-info-row{display:flex;justify-content:space-between;align-items:baseline;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.06);}
+.cp-info-row:last-child{border-bottom:none;}
+.cp-info-key{font-size:11px;color:rgba(255,255,255,.4);font-weight:400;}
+.cp-info-val{font-size:13px;color:#fff;font-weight:400;text-align:right;}
+.cp-section-lbl{
+  font-size:9px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;
+  color:rgba(255,255,255,.3);padding:16px 20px 6px;
+}
+.cp-job-row{
+  display:flex;align-items:center;gap:12px;
+  padding:12px 20px;border-bottom:1px solid rgba(255,255,255,.06);
+}
+.cp-job-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0;}
+.cp-job-info{flex:1;min-width:0;}
+.cp-job-name{font-size:14px;font-weight:400;color:#fff;}
+.cp-job-meta{font-size:11px;color:rgba(255,255,255,.38);margin-top:2px;}
+.cp-job-upcoming{color:rgba(255,255,255,.55);}
+.cp-book-btn{
+  margin:16px 20px;width:calc(100% - 40px);
+  background:#fff;color:#1C1917;border:none;
+  font-family:'Barlow',sans-serif;font-weight:600;font-size:13px;
+  letter-spacing:.08em;text-transform:uppercase;
+  padding:14px;border-radius:8px;cursor:pointer;
+  -webkit-tap-highlight-color:transparent;
+}
+.cp-book-btn:active{background:#eee;}
+
 .client-suggestions{
   position:absolute;left:0;right:0;top:100%;
   background:var(--w);
@@ -733,7 +789,7 @@ body{font-family:'Barlow',sans-serif;font-weight:400;background:var(--w);color:v
   </div>
 </div>
 
-<!-- DONE WALL (black) -->
+<!-- DONE WALL (black) — grouped by client -->
 <div class="world-wall world-done" id="doneWall">
   <div class="wall-header">
     <div class="wall-world-name">Done</div>
@@ -742,14 +798,25 @@ body{font-family:'Barlow',sans-serif;font-weight:400;background:var(--w);color:v
       <button class="wall-close" onclick="closeDoneWall()">&#x2715;</button>
     </div>
   </div>
-  <div class="dw-track" id="dwTrack"></div>
-  <div class="dw-dots" id="dwDots"></div>
-  <!-- quick add bar -->
+  <div class="ql-body" id="dwTrack"></div>
   <div class="dw-add-bar">
     <input class="dw-add-inp" id="dwAddInp" placeholder="what did you finish&#8230;" autocomplete="off">
     <button class="dw-add-btn" onclick="dwQuickAdd()">&#43;</button>
   </div>
 </div>
+
+<!-- CLIENT PROFILE PANEL — slides over done wall -->
+<div class="world-wall world-done" id="clientProfileWall" style="z-index:110;">
+  <div class="wall-header">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <button class="wall-close" onclick="closeClientProfile()" style="font-size:16px;">&#8249;</button>
+      <div class="wall-world-name" id="cpName" style="font-size:26px;"></div>
+    </div>
+    <button class="wall-close" onclick="closeClientProfile()">&#x2715;</button>
+  </div>
+  <div class="ql-body" id="cpBody"></div>
+</div>
+
 
 <!-- DONE MINI MODAL -->
 <div class="dw-modal-overlay" id="dwModalOverlay" onclick="dwCloseMiniModal(event)">
@@ -1590,40 +1657,163 @@ function openDoneWall(){renderDoneWall();document.getElementById('doneWall').cla
 function closeDoneWall(){document.getElementById('doneWall').classList.remove('open');document.body.style.overflow='';}
 
 function renderDoneWall(){
-  var done=getDoneEvents(),track=document.getElementById('dwTrack'),dots=document.getElementById('dwDots');
-  track.innerHTML='';dots.innerHTML='';
+  var done=getDoneEvents();
+  var body=document.getElementById('dwTrack');
+  body.innerHTML='';
   document.getElementById('dwCount').textContent=done.length?done.length+' job'+(done.length>1?'s':''):'';
+
   if(!done.length){
-    var empty=mkDiv('dw-empty');
-    empty.innerHTML='<div class="dw-empty-big">ZERO</div><div class="dw-empty-msg">nothing done yet<br>add one below ↓</div>';
-    track.appendChild(empty);return;
+    body.innerHTML='<div class="ql-empty">nothing done yet<br>add one below ↓</div>';
+    return;
   }
-  done.forEach(function(ev,i){
-    var bg=BG_CYCLE[i%BG_CYCLE.length],card=mkDiv('dw-card '+bg);
-    var ghost=mkDiv('dw-num');ghost.textContent=pad(i+1);card.appendChild(ghost);
-    var top=mkDiv('dw-top');
-    var tag=mkDiv('dw-tag');tag.textContent=ev.isLog?'manual':'completed';
-    var dateEl=mkDiv('dw-date-lbl');
-    try{dateEl.textContent=new Date(ev.date+'T12:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}).toUpperCase();}catch(e){dateEl.textContent=ev.date;}
-    top.appendChild(tag);top.appendChild(dateEl);card.appendChild(top);
-    var body=mkDiv('dw-body');
-    var cl=mkDiv('dw-client');cl.textContent=ev.name;body.appendChild(cl);
-    if(ev.desc){var dsc=mkDiv('dw-desc');dsc.textContent=ev.desc;body.appendChild(dsc);}
-    var pills=mkDiv('dw-pills');
-    if(ev.start&&ev.end&&ev.start!==ev.end){var p=mkDiv('dw-pill');p.textContent=ev.start+' \u2013 '+ev.end;pills.appendChild(p);}
-    if(ev.phone){var p2=mkDiv('dw-pill');p2.textContent=ev.phone;pills.appendChild(p2);}
-    var dur=ev.start&&ev.end?minsOf(ev.start,ev.end):0;
-    if(dur>0){var p3=mkDiv('dw-pill');p3.textContent=fmt(dur);pills.appendChild(p3);}
-    if(ev.isLog){
-      // delete manual log entry
-      var del=mkEl('button','dw-pill');del.textContent='remove';del.style.cssText='cursor:pointer;opacity:.5;';
-      (function(eid){del.onclick=function(){doneLog=doneLog.filter(function(d){return d.id!==eid;});persist();renderDoneWall();updateSideTabs();};})(ev.id);
-      pills.appendChild(del);
-    }
-    body.appendChild(pills);card.appendChild(body);track.appendChild(card);
-    var dot=mkDiv('dw-dot'+(i===0?' active':''));dots.appendChild(dot);
+
+  // group by client name
+  var groups={};var groupOrder=[];
+  done.forEach(function(ev){
+    var key=ev.name||'Other';
+    if(!groups[key]){groups[key]=[];groupOrder.push(key);}
+    groups[key].push(ev);
   });
-  track.onscroll=function(){var idx=Math.round(track.scrollLeft/track.offsetWidth);dots.querySelectorAll('.dw-dot').forEach(function(d,i){d.classList.toggle('active',i===idx);});};
+
+  groupOrder.forEach(function(clientName){
+    var evts=groups[clientName];
+    var color=clientColor(clientName);
+
+    // group header — tap to open client profile
+    var hdr=mkDiv('dw-group-header');
+    hdr.style.cursor='pointer';
+    var dot=mkDiv('dw-group-dot');dot.style.background=color;
+    var nm=mkDiv('dw-group-name');nm.textContent=clientName;
+    var cnt=mkDiv('dw-group-count');cnt.textContent=evts.length+' job'+(evts.length>1?'s':'');
+    var arr=document.createElement('span');arr.style.cssText='font-size:16px;color:rgba(255,255,255,.3);';arr.textContent='›';
+    hdr.appendChild(dot);hdr.appendChild(nm);hdr.appendChild(cnt);hdr.appendChild(arr);
+    (function(cn){hdr.onclick=function(){openClientProfile(cn);};})(clientName);
+    body.appendChild(hdr);
+
+    // job rows under this client
+    evts.forEach(function(ev){
+      var row=mkDiv('dw-group-row');
+      var info=mkDiv('dw-row-info');
+      var title=mkDiv('dw-row-title');
+      var dateStr='';
+      try{dateStr=new Date(ev.date+'T12:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});}catch(e){dateStr=ev.date;}
+      title.textContent=dateStr;
+      var meta=mkDiv('dw-row-meta');
+      var parts=[];
+      if(ev.start&&ev.end&&ev.start!==ev.end) parts.push(ev.start+' → '+ev.end);
+      var dur=ev.start&&ev.end?minsOf(ev.start,ev.end):0;
+      if(dur>0) parts.push(fmt(dur));
+      if(ev.desc) parts.push(ev.desc);
+      if(ev.isLog) parts.push('manual');
+      meta.textContent=parts.join(' · ');
+      info.appendChild(title);if(meta.textContent)info.appendChild(meta);
+      row.appendChild(info);
+      body.appendChild(row);
+    });
+  });
+
+  // dwDots removed — grouped view doesn't need dots
+}
+
+// ── CLIENT PROFILE PANEL ──
+function openClientProfile(clientName){
+  var c=clients.find(function(x){return x.name===clientName;});
+  var color=clientColor(clientName);
+  var panel=document.getElementById('clientProfileWall');
+  var nameEl=document.getElementById('cpName');
+  var body=document.getElementById('cpBody');
+
+  nameEl.textContent=clientName;
+  nameEl.style.color='rgba(255,255,255,.85)';
+  body.innerHTML='';
+
+  // client info box (if we have a client record)
+  if(c){
+    var FREQ_LBL={weekly:'Weekly',biweekly:'Bi-weekly',monthly:'Monthly',onetime:'One-time'};
+    var info=mkDiv('cp-info-box');
+    var infoRows=[
+      ['Phone', c.phone||'—'],
+      ['Address', c.address||'—'],
+      ['Frequency', FREQ_LBL[c.freq]||c.freq||'—'],
+      ['Rate', c.hasFixedAmount!==false&&c.amount?'$'+c.amount+'/visit':'After the job'],
+    ];
+    infoRows.forEach(function(r){
+      var row=mkDiv('cp-info-row');
+      var k=mkDiv('cp-info-key');k.textContent=r[0];
+      var v=mkDiv('cp-info-val');v.textContent=r[1];
+      row.appendChild(k);row.appendChild(v);info.appendChild(row);
+    });
+    body.appendChild(info);
+  }
+
+  // upcoming jobs
+  var today=todayDS();
+  var upcoming=events.filter(function(ev){
+    return ev.name===clientName&&ev.date>=today&&ev.status!=='personal'&&ev.status!=='busy';
+  }).sort(function(a,b){return a.date.localeCompare(b.date)||a.start.localeCompare(b.start);});
+
+  if(upcoming.length){
+    var ulbl=mkDiv('cp-section-lbl');ulbl.textContent='Upcoming';body.appendChild(ulbl);
+    upcoming.forEach(function(ev){
+      var row=mkDiv('cp-job-row');
+      var dot=mkDiv('cp-job-dot');dot.style.background=SC[ev.status]||color;
+      var info2=mkDiv('cp-job-info');
+      var nm=mkDiv('cp-job-name cp-job-upcoming');
+      try{nm.textContent=new Date(ev.date+'T12:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});}catch(e){nm.textContent=ev.date;}
+      var meta=mkDiv('cp-job-meta');
+      var pts=[];
+      if(ev.start&&ev.end) pts.push(ev.start+' → '+ev.end);
+      if(ev.desc) pts.push(ev.desc);
+      meta.textContent=pts.join(' · ');
+      info2.appendChild(nm);if(meta.textContent)info2.appendChild(meta);
+      row.appendChild(dot);row.appendChild(info2);body.appendChild(row);
+    });
+  }
+
+  // past/done jobs
+  var past=getDoneEvents().filter(function(ev){return ev.name===clientName;});
+
+  if(past.length){
+    var plbl=mkDiv('cp-section-lbl');plbl.textContent='Done — '+past.length+' job'+(past.length>1?'s':'');body.appendChild(plbl);
+    past.forEach(function(ev){
+      var row=mkDiv('cp-job-row');
+      var dot=mkDiv('cp-job-dot');dot.style.background=color;dot.style.opacity='.5';
+      var info3=mkDiv('cp-job-info');
+      var nm=mkDiv('cp-job-name');
+      try{nm.textContent=new Date(ev.date+'T12:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});}catch(e){nm.textContent=ev.date;}
+      var meta=mkDiv('cp-job-meta');
+      var pts2=[];
+      if(ev.start&&ev.end&&ev.start!==ev.end) pts2.push(ev.start+' → '+ev.end);
+      var dur=ev.start&&ev.end?minsOf(ev.start,ev.end):0;
+      if(dur>0) pts2.push(fmt(dur));
+      if(ev.desc) pts2.push(ev.desc);
+      meta.textContent=pts2.join(' · ');
+      info3.appendChild(nm);if(meta.textContent)info3.appendChild(meta);
+      row.appendChild(dot);row.appendChild(info3);body.appendChild(row);
+    });
+  }
+
+  if(!upcoming.length&&!past.length){
+    body.innerHTML+='<div class="ql-empty">no jobs found for this client yet</div>';
+  }
+
+  // book new job button
+  var bookBtn=mkEl('button','cp-book-btn');bookBtn.textContent='+ Schedule New Job';
+  bookBtn.onclick=function(){
+    closeClientProfile();closeDoneWall();
+    openModal();
+    document.getElementById('mName').value=clientName;
+    if(c&&c.phone) document.getElementById('mPhone').value=c.phone;
+    showPanel('tl');
+    document.getElementById('modalOverlay').classList.add('open');
+  };
+  body.appendChild(bookBtn);
+
+  panel.classList.add('open');
+}
+
+function closeClientProfile(){
+  document.getElementById('clientProfileWall').classList.remove('open');
 }
 
 // quick add — opens mini modal pre-filled with name
@@ -1720,9 +1910,15 @@ function renderLaterWall(){
     if(c.phone) metaParts.push(c.phone);
     var meta=mkDiv('ql-meta');meta.textContent=metaParts.join(' \u00b7 ');
     info.appendChild(nm);if(meta.textContent)info.appendChild(meta);
+    // edit pencil button
+    var edit=mkEl('button','');
+    edit.style.cssText='background:rgba(255,255,255,.1);border:none;color:rgba(255,255,255,.5);font-size:13px;padding:6px 10px;border-radius:6px;cursor:pointer;flex-shrink:0;margin-right:6px;';
+    edit.textContent='✏';
+    (function(cid){edit.onclick=function(e){e.stopPropagation();openClientEdit(cid);};})(c.id);
     var arr=mkDiv('ql-arr');arr.textContent='\u203a';
-    row.appendChild(av);row.appendChild(info);row.appendChild(arr);
-    (function(cid){row.onclick=function(){openClientEdit(cid);};})(c.id);
+    row.appendChild(av);row.appendChild(info);row.appendChild(edit);row.appendChild(arr);
+    // tap row → open profile
+    (function(cn){row.onclick=function(){openClientProfile(cn);closeLaterWall();};})(c.name);
     body.appendChild(row);
   });
 }

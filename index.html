@@ -246,7 +246,7 @@ body{font-family:'Barlow',sans-serif;font-weight:400;background:var(--w);color:v
   transition:transform .1s;
 }
 .evt-card:active{transform:scale(.98);}
-.evt-strip{width:4px;flex-shrink:0;}
+.evt-strip{width:8px;flex-shrink:0;}
 .evt-body{flex:1;padding:10px 11px;min-width:0;}
 .evt-name{font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--b);}
 .evt-sub{font-size:11px;font-weight:400;color:#777777;margin-top:3px;}
@@ -597,6 +597,17 @@ body{font-family:'Barlow',sans-serif;font-weight:400;background:var(--w);color:v
 }
 .cp-book-btn:active{background:#eee;}
 
+/* ── JOB PROGRESS BAR on calendar day ── */
+.day-progress-bar{
+  position:absolute;bottom:0;left:0;right:0;
+  height:4px;background:var(--g2);
+  border-radius:0 0 6px 6px;overflow:hidden;
+}
+.day-progress-fill{
+  height:100%;border-radius:0 0 6px 6px;
+  transition:width .4s ease;
+}
+
 .client-suggestions{
   position:absolute;left:0;right:0;top:100%;
   background:var(--w);
@@ -889,7 +900,38 @@ body{font-family:'Barlow',sans-serif;font-weight:400;background:var(--w);color:v
   <div class="ql-body" id="queueBody"></div>
   <div class="ql-add">
     <input class="ql-inp" id="queueInp" placeholder="add someone waiting&#8230;" autocomplete="off">
-    <button class="ql-btn" onclick="queueQuickAdd()">&#43;</button>
+    <button class="ql-btn" onclick="queueQuickAdd()" title="quick add">&#43;</button>
+    <button class="ql-btn" onclick="openNewJobModal()" title="add with hours" style="margin-left:6px;font-size:11px;width:auto;padding:0 10px;">job</button>
+  </div>
+</div>
+
+<!-- JOB MODAL — name + estimate hours -->
+<div class="modal-overlay" id="jobModalOverlay" onclick="closeJobModalBg(event)">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="jobModalTitle">New Job</div>
+    <div class="modal-sub">Set a total hour estimate to track progress on the calendar</div>
+    <div class="f-group" style="position:relative;">
+      <div class="f-label">Client / Job name</div>
+      <input class="f-input" id="jmName" placeholder="Bathroom — João" autocomplete="off" oninput="showJobClientSuggestions(this.value)" onfocus="showJobClientSuggestions(this.value)">
+      <div class="client-suggestions" id="jobClientSuggestions"></div>
+    </div>
+    <div class="f-group">
+      <div class="f-label">Total estimated hours</div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <input class="f-input" id="jmHours" type="number" inputmode="numeric" placeholder="40" min="1" max="999" style="width:80px;">
+        <span style="font-size:12px;color:var(--mu);font-weight:400;">hours total</span>
+      </div>
+    </div>
+    <div class="f-group">
+      <div class="f-label">Notes</div>
+      <input class="f-input" id="jmNotes" placeholder="tile floors, fix shower, paint walls" autocomplete="off">
+    </div>
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="closeJobModal()">cancel</button>
+      <button class="modal-save" onclick="saveJobModal()">save job</button>
+    </div>
+    <button class="modal-del-btn" id="jmDelBtn" onclick="deleteJobModal()">delete job</button>
   </div>
 </div>
 
@@ -1001,6 +1043,8 @@ var events      = JSON.parse(localStorage.getItem('ag6_evts')  || '[]');
 var clients     = JSON.parse(localStorage.getItem('ag6_cl')    || '[]');
 var queueJobs   = JSON.parse(localStorage.getItem('ag6_queue') || '[]');
 var doneLog     = JSON.parse(localStorage.getItem('ag6_done')  || '[]');
+// jobs with hour estimates — {id, name, hours, notes, done}
+var jobEstimates= JSON.parse(localStorage.getItem('ag6_jobs')  || '[]');
 var selDate     = toDS(new Date());
 var calY, calM;
 var mStatus     = 'working';
@@ -1044,7 +1088,24 @@ var CLIENT_COLORS=[
   '#5BA65B', // lime green
 ];
 
-// returns a consistent color for a client name — uses saved color if available
+// returns job estimate object for a name, or null
+function getJobEstimate(name){
+  return jobEstimates.find(function(j){return j.name===name&&!j.done;})||null;
+}
+
+// returns total hours logged across all events for a job name
+function getJobLoggedHours(name){
+  return events.filter(function(ev){return ev.name===name;})
+    .reduce(function(acc,ev){return acc+minsOf(ev.start,ev.end)/60;},0);
+}
+
+// returns progress 0-1 for a job name (0 = not started, 1 = complete)
+function getJobProgress(name){
+  var job=getJobEstimate(name);
+  if(!job||!job.hours) return -1; // no estimate set
+  var logged=getJobLoggedHours(name);
+  return Math.min(1, logged/job.hours);
+}
 function clientColor(name){
   var c = clients.find(function(x){return x.name===name;});
   if(c && c.color) return c.color;
@@ -1063,6 +1124,7 @@ function persist(){
   localStorage.setItem('ag6_cl',JSON.stringify(clients));
   localStorage.setItem('ag6_queue',JSON.stringify(queueJobs));
   localStorage.setItem('ag6_done',JSON.stringify(doneLog));
+  localStorage.setItem('ag6_jobs',JSON.stringify(jobEstimates));
 }
 function pad(n){return String(n).padStart(2,'0');}
 function toMins(t){var p=t.split(':');return parseInt(p[0])*60+parseInt(p[1]);}
@@ -1259,6 +1321,21 @@ function renderCal(){
           pill.appendChild(seg);
         });
         e.appendChild(pill);
+
+        // job progress bar — show if any event on this day has an estimate
+        var dayNames=dayEvts.map(function(ev){return ev.name;});
+        var uniqueNames=[...new Set(dayNames)];
+        uniqueNames.forEach(function(name){
+          var progress=getJobProgress(name);
+          if(progress<0) return; // no estimate set
+          var barWrap=mkDiv('day-progress-bar');
+          var barFill=mkDiv('day-progress-fill');
+          var color=clientColor(name)||'#3D8B5E';
+          barFill.style.background=color;
+          barFill.style.width=Math.round(progress*100)+'%';
+          barWrap.appendChild(barFill);
+          e.appendChild(barWrap);
+        });
       }
     }
 
@@ -1587,6 +1664,89 @@ function closeModal(){
   mEvId=null;
 }
 
+// ── JOB MODAL ──
+var jmEditId = null;
+
+function openNewJobModal(){
+  jmEditId = null;
+  document.getElementById('jobModalTitle').textContent = 'New Job';
+  document.getElementById('jmName').value = '';
+  document.getElementById('jmHours').value = '';
+  document.getElementById('jmNotes').value = '';
+  document.getElementById('jmDelBtn').style.display = 'none';
+  document.getElementById('jobModalOverlay').classList.add('open');
+  setTimeout(function(){document.getElementById('jmName').focus();},250);
+}
+
+function openEditJobModal(id){
+  var job=jobEstimates.find(function(j){return j.id===id;});if(!job)return;
+  jmEditId=id;
+  document.getElementById('jobModalTitle').textContent='Edit Job';
+  document.getElementById('jmName').value=job.name;
+  document.getElementById('jmHours').value=job.hours;
+  document.getElementById('jmNotes').value=job.notes||'';
+  document.getElementById('jmDelBtn').style.display='block';
+  document.getElementById('jobModalOverlay').classList.add('open');
+}
+
+function closeJobModal(){
+  document.getElementById('jobModalOverlay').classList.remove('open');
+  document.getElementById('jobClientSuggestions').classList.remove('open');
+  jmEditId=null;
+}
+function closeJobModalBg(e){if(e.target===document.getElementById('jobModalOverlay'))closeJobModal();}
+
+function saveJobModal(){
+  var nameEl=document.getElementById('jmName');
+  var name=nameEl.value.trim();
+  if(!name){nameEl.classList.add('err');nameEl.focus();return;}
+  nameEl.classList.remove('err');
+  var hours=parseFloat(document.getElementById('jmHours').value)||0;
+  var notes=document.getElementById('jmNotes').value.trim();
+  if(jmEditId){
+    var idx=jobEstimates.findIndex(function(j){return j.id===jmEditId;});
+    if(idx>-1) jobEstimates[idx]=Object.assign({},jobEstimates[idx],{name,hours,notes});
+  } else {
+    jobEstimates.push({id:Date.now()+'',name,hours,notes,done:false});
+    // also add to waiting list if not already there
+    if(!queueJobs.find(function(q){return q.name===name;})){
+      queueJobs.push({id:Date.now()+'q',name,phone:'',done:false});
+    }
+  }
+  persist();closeJobModal();renderAll();renderQueueWall();
+}
+
+function deleteJobModal(){
+  if(!jmEditId)return;
+  var job=jobEstimates.find(function(j){return j.id===jmEditId;});
+  if(job&&confirm('Delete job "'+job.name+'"?')){
+    jobEstimates=jobEstimates.filter(function(j){return j.id!==jmEditId;});
+    persist();closeJobModal();renderAll();renderQueueWall();
+  }
+}
+
+// client suggestions for job modal
+function showJobClientSuggestions(val){
+  var box=document.getElementById('jobClientSuggestions');
+  if(!clients.length){box.classList.remove('open');return;}
+  var q=(val||'').toLowerCase().trim();
+  var matches=clients.filter(function(c){return !q||c.name.toLowerCase().indexOf(q)!==-1;});
+  if(!matches.length){box.classList.remove('open');return;}
+  box.innerHTML='';
+  matches.forEach(function(c){
+    var row=mkDiv('cs-row');
+    var dot=mkDiv('cs-dot');dot.style.background=clientColor(c.name);
+    var name=mkDiv('cs-name');name.textContent=c.name;
+    row.appendChild(dot);row.appendChild(name);
+    (function(client){row.onclick=function(){
+      document.getElementById('jmName').value=client.name;
+      box.classList.remove('open');
+    };})(c);
+    box.appendChild(row);
+  });
+  box.classList.add('open');
+}
+
 function showClientSuggestions(val){
   var box = document.getElementById('clientSuggestions');
   if(!clients.length){box.classList.remove('open');return;}
@@ -1912,13 +2072,38 @@ function renderQueueWall(){
   var sorted=queueJobs.filter(function(j){return !j.done;}).concat(queueJobs.filter(function(j){return j.done;}));
   sorted.forEach(function(j,i){
     var row=mkDiv('ql-row'+(j.done?' ql-faded':''));
+    row.style.flexDirection='column';row.style.alignItems='stretch';row.style.gap='8px';
+    var top=mkDiv('');top.style.cssText='display:flex;align-items:center;gap:13px;';
     var num=mkDiv('ql-num');num.textContent=pad(i+1);
     var info=mkDiv('ql-info');
     var nm=mkDiv('ql-name');nm.textContent=j.name;
-    var meta=mkDiv('ql-meta');meta.textContent=[j.phone,j.done?'done \u2713':''].filter(Boolean).join(' \u00b7 ');
+    // check for estimate
+    var job=getJobEstimate(j.name);
+    var logged=job?getJobLoggedHours(j.name):0;
+    var metaParts=[j.phone];
+    if(job) metaParts.push(logged.toFixed(1)+'h / '+job.hours+'h logged');
+    if(j.done) metaParts.push('done ✓');
+    var meta=mkDiv('ql-meta');meta.textContent=metaParts.filter(Boolean).join(' · ');
     info.appendChild(nm);if(meta.textContent)info.appendChild(meta);
-    var arr=mkDiv('ql-arr');arr.textContent='\u203a';
-    row.appendChild(num);row.appendChild(info);row.appendChild(arr);
+    var arr=mkDiv('ql-arr');arr.textContent='›';
+    top.appendChild(num);top.appendChild(info);top.appendChild(arr);
+    row.appendChild(top);
+    // progress bar if estimate exists
+    if(job&&job.hours>0){
+      var pct=Math.min(100,Math.round(logged/job.hours*100));
+      var color=clientColor(j.name)||'#3D8B5E';
+      var barWrap=mkEl('div','');barWrap.style.cssText='background:rgba(255,255,255,.1);border-radius:4px;height:6px;overflow:hidden;margin:0 4px;';
+      var barFill=mkEl('div','');barFill.style.cssText='height:100%;width:'+pct+'%;background:'+color+';border-radius:4px;transition:width .3s;';
+      barWrap.appendChild(barFill);row.appendChild(barWrap);
+      // also show pct label and edit job button
+      var pctRow=mkEl('div','');pctRow.style.cssText='display:flex;justify-content:space-between;padding:0 4px;';
+      var pctLbl=mkEl('span','');pctLbl.style.cssText='font-size:10px;color:rgba(255,255,255,.4);';
+      pctLbl.textContent=pct+'% complete';
+      var editBtn=mkEl('button','');editBtn.style.cssText='font-size:10px;color:rgba(255,255,255,.4);background:none;border:none;cursor:pointer;';
+      editBtn.textContent='edit estimate';
+      (function(jid2){editBtn.onclick=function(e){e.stopPropagation();openEditJobModal(jid2);};})(job.id);
+      pctRow.appendChild(pctLbl);pctRow.appendChild(editBtn);row.appendChild(pctRow);
+    }
     (function(jid){row.onclick=function(){closeQueueWall();var jb=queueJobs.find(function(x){return x.id===jid;});if(!jb)return;openModal();document.getElementById('mName').value=jb.name;document.getElementById('mPhone').value=jb.phone||'';showPanel('tl');document.getElementById('modalOverlay').classList.add('open');};})(j.id);
     body.appendChild(row);
   });

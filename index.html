@@ -207,21 +207,59 @@ body{font-family:'Barlow',sans-serif;font-weight:400;background:var(--w);color:v
 @keyframes slideInLeft {from{transform:translateX(-100%);opacity:0}to{transform:translateX(0);opacity:1}}
 .tl-page.from-right{animation-name:slideInRight;}
 .tl-page.from-left {animation-name:slideInLeft;}
-.t-row{display:grid;grid-template-columns:42px 1fr;min-height:56px;border-bottom:1px solid var(--g2);}
-.t-hour{font-size:10px;font-weight:400;color:#777777;text-align:right;padding:9px 11px 0 0;border-right:1px solid var(--ln);}
-.t-content{padding:5px 13px;display:flex;flex-direction:column;gap:4px;justify-content:center;}
-.t-free{font-size:10px;font-weight:400;color:var(--g);letter-spacing:.06em;cursor:pointer;padding:9px 0;}
-.t-free:active{color:#777777;}
-.evt-card{display:flex;align-items:stretch;border-radius:4px;overflow:hidden;cursor:pointer;-webkit-tap-highlight-color:transparent;}
+/* ── TIMELINE ── */
+.t-row{
+  display:grid;grid-template-columns:42px 1fr;
+  min-height:52px;
+  border-bottom:1px solid var(--g2);
+  position:relative;
+}
+.t-hour{
+  font-size:10px;font-weight:400;color:#aaa;
+  text-align:right;padding:8px 10px 0 0;
+  border-right:1px solid var(--ln);
+  flex-shrink:0;
+}
+.t-content{
+  padding:4px 10px;
+  display:flex;flex-direction:column;gap:4px;justify-content:center;
+}
+.t-free{
+  font-size:11px;font-weight:400;color:var(--g);
+  letter-spacing:.04em;cursor:pointer;padding:8px 0;
+  -webkit-tap-highlight-color:transparent;
+}
+.t-free:active{color:var(--mu);}
+.t-continuation{
+  font-size:11px;font-weight:400;
+  padding:8px 0;opacity:.7;
+}
+
+/* floating card style */
+.evt-card{
+  display:flex;align-items:stretch;
+  border-radius:10px;
+  overflow:hidden;
+  cursor:pointer;-webkit-tap-highlight-color:transparent;
+  margin:3px 0;
+  box-shadow:0 2px 8px rgba(0,0,0,.06);
+  transition:transform .1s;
+}
+.evt-card:active{transform:scale(.98);}
 .evt-strip{width:4px;flex-shrink:0;}
-.evt-body{flex:1;padding:7px 9px;min-width:0;}
-.evt-name{font-size:10px;font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.evt-sub{font-size:10px;font-weight:400;color:#777777;margin-top:2px;}
-.evt-del{background:none;border:none;color:#777777;font-size:10px;padding:0 11px;cursor:pointer;align-self:center;}
-.s-working{background:rgba(61,139,94,.10);}
+.evt-body{flex:1;padding:10px 11px;min-width:0;}
+.evt-name{font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--b);}
+.evt-sub{font-size:11px;font-weight:400;color:#777777;margin-top:3px;}
+.evt-del{
+  background:none;border:none;color:var(--mu);
+  font-size:18px;padding:0 12px;cursor:pointer;
+  align-self:center;opacity:.5;
+}
+.evt-del:active{opacity:1;}
+.s-working{background:rgba(61,139,94,.12);}
 .s-waiting{background:rgba(200,87,26,.10);}
 .s-late{background:rgba(184,60,43,.10);}
-.s-urgent{background:rgba(212,144,10,.14);}
+.s-urgent{background:rgba(212,144,10,.13);}
 .s-personal,.s-busy{background:var(--g2);}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 .evt-card.s-urgent .evt-strip{animation:pulse 2s ease-in-out infinite;}
@@ -1492,10 +1530,16 @@ function hexToRgba(cssVar,alpha){
 }
 function buildEvtCard(ev){
   var card=mkDiv('evt-card s-'+ev.status);
-  var strip=mkDiv('evt-strip');strip.style.background=SC[ev.status]||'#999';
+  // use client color for strip if available, else status color
+  var stripColor = clientColor(ev.name) || SC[ev.status] || '#999';
+  var strip=mkDiv('evt-strip');strip.style.background=stripColor;
   var body=mkDiv('evt-body');
   var name=mkDiv('evt-name');name.textContent=ev.name;
-  var sub=mkDiv('evt-sub');sub.textContent=[ev.start+' \u2192 '+ev.end,ev.phone,ev.desc].filter(Boolean).join(' \u00b7 ');
+  // time on its own line, desc below
+  var sub=mkDiv('evt-sub');
+  var timePart=ev.start&&ev.end?ev.start+' \u2192 '+ev.end:'';
+  var descPart=[ev.phone,ev.desc].filter(Boolean).join(' \u00b7 ');
+  sub.textContent=[timePart,descPart].filter(Boolean).join(' \u00b7 ');
   body.appendChild(name);body.appendChild(sub);
   (function(eid){body.onclick=function(){openModalEdit(eid);};})(ev.id);
   var del=mkEl('button','evt-del');del.textContent='\u00d7';

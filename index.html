@@ -821,6 +821,13 @@ body{font-family:'Barlow',sans-serif;font-weight:400;background:var(--w);color:v
     </div>
     <div class="f-group"><div class="f-label">Phone</div><input class="f-input" id="mPhone" type="tel" placeholder="(11) 9 9999-9999"></div>
     <div class="f-group"><div class="f-label">Description</div><input class="f-input" id="mDesc" placeholder="install bathroom faucet" autocomplete="off"></div>
+    <div class="f-group">
+      <div class="f-label">Total job hours (optional — tracks progress on calendar)</div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <input class="f-input" id="mJobHours" type="number" inputmode="numeric" placeholder="e.g. 40" min="1" max="999" style="width:90px;">
+        <span style="font-size:11px;color:var(--mu);" id="mJobProgress"></span>
+      </div>
+    </div>
     <div class="f-group"><div class="f-label">Date</div><input class="f-input" id="mDate" type="date"></div>
     <div class="f-group">
       <div class="f-label">Time</div>
@@ -1632,6 +1639,8 @@ function openModal(startTime){
   document.getElementById('modalTitle').textContent='New Event';
   document.getElementById('modalSub').textContent='';
   document.getElementById('mName').value='';document.getElementById('mPhone').value='';document.getElementById('mDesc').value='';
+  document.getElementById('mJobHours').value='';
+  document.getElementById('mJobProgress').textContent='';
   document.getElementById('mDate').value=selDate;
   if(startTime){
     document.getElementById('mStart').value=startTime;
@@ -1652,11 +1661,24 @@ function openModalEdit(evId){
   document.getElementById('modalSub').textContent='tap save to update \u00b7 or delete below';
   document.getElementById('mName').value=ev.name;document.getElementById('mPhone').value=ev.phone||'';document.getElementById('mDesc').value=ev.desc||'';
   document.getElementById('mDate').value=ev.date;document.getElementById('mStart').value=ev.start;document.getElementById('mEnd').value=ev.end;
+  // load existing job estimate
+  var job=getJobEstimate(ev.name);
+  document.getElementById('mJobHours').value=job?job.hours:'';
+  updateJobProgressLabel(ev.name);
   mStatus=ev.status;
   document.querySelectorAll('.s-btn').forEach(function(b){b.classList.toggle('active',b.dataset.s===ev.status);});
   document.getElementById('modalDelBtn').style.display='block';
   document.getElementById('modalSaveBtn').textContent='update event';
   document.getElementById('modalOverlay').classList.add('open');
+}
+
+function updateJobProgressLabel(name){
+  if(!name){document.getElementById('mJobProgress').textContent='';return;}
+  var job=getJobEstimate(name);
+  if(!job){document.getElementById('mJobProgress').textContent='no estimate yet';return;}
+  var logged=getJobLoggedHours(name);
+  var pct=Math.min(100,Math.round(logged/job.hours*100));
+  document.getElementById('mJobProgress').textContent=logged.toFixed(1)+'h logged \u00b7 '+pct+'% done';
 }
 function closeModal(){
   document.getElementById('modalOverlay').classList.remove('open');
@@ -1774,6 +1796,10 @@ function showClientSuggestions(val){
       row.onclick = function(){
         document.getElementById('mName').value = client.name;
         if(client.phone) document.getElementById('mPhone').value = client.phone;
+        // load existing estimate if any
+        var job=getJobEstimate(client.name);
+        if(job) document.getElementById('mJobHours').value=job.hours;
+        updateJobProgressLabel(client.name);
         hideClientSuggestions();
       };
     })(c);
@@ -1804,6 +1830,18 @@ function saveModal(){
   var fields={status:mStatus,name:name,phone:document.getElementById('mPhone').value.trim(),desc:document.getElementById('mDesc').value.trim(),date:document.getElementById('mDate').value,start:document.getElementById('mStart').value,end:document.getElementById('mEnd').value};
   if(mEvId){var idx=events.findIndex(function(e){return e.id===mEvId;});if(idx>-1)events[idx]=Object.assign({},events[idx],fields);}
   else{events.push(Object.assign({id:Date.now()+''},fields));}
+
+  // save job estimate if hours provided
+  var jobHours=parseFloat(document.getElementById('mJobHours').value)||0;
+  if(jobHours>0){
+    var existingJob=jobEstimates.findIndex(function(j){return j.name===name&&!j.done;});
+    if(existingJob>-1){
+      jobEstimates[existingJob].hours=jobHours;
+    } else {
+      jobEstimates.push({id:Date.now()+'j',name:name,hours:jobHours,notes:'',done:false});
+    }
+  }
+
   selDate=document.getElementById('mDate').value;
   persist();closeModal();renderAll();showPanel('tl');
 }

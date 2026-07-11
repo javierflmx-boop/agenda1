@@ -706,7 +706,36 @@ body{font-family:'Barlow',sans-serif;font-weight:400;background:var(--w);color:v
       <div class="sp-dot"></div><div class="sp-dot"></div>
     </div>
   </div>
+  <!-- COUNTDOWN -->
+  <div id="spCountdown" style="display:none;margin-top:32px;text-align:center;">
+    <div id="spCountDays" style="font-family:'Bebas Neue',sans-serif;font-size:72px;letter-spacing:2px;color:var(--b);line-height:1;"></div>
+    <div id="spCountUnit" style="font-size:10px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--mu);margin-top:2px;"></div>
+    <div id="spCountLabel" style="font-size:13px;font-weight:400;color:var(--mu);margin-top:6px;letter-spacing:.04em;"></div>
+  </div>
+  <div id="spSetCountdown" style="margin-top:20px;font-size:10px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--ln);text-decoration:underline;" onclick="openCountdownSetup(event)">set countdown</div>
   <div class="sp-tap">tap to open</div>
+</div>
+
+<!-- COUNTDOWN SETUP MODAL -->
+<div class="modal-overlay" id="countdownModal" onclick="closeCountdownModalBg(event)">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Countdown</div>
+    <div class="modal-sub">Set a deadline or event to count down to</div>
+    <div class="f-group">
+      <div class="f-label">Label</div>
+      <input class="f-input" id="cdLabel" placeholder="Kitchen deadline, SOLO patent, vacation..." autocomplete="off">
+    </div>
+    <div class="f-group">
+      <div class="f-label">Target date</div>
+      <input class="f-input" id="cdDate" type="date">
+    </div>
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="closeCountdownModal()">cancel</button>
+      <button class="modal-save" onclick="saveCountdown()">save</button>
+    </div>
+    <button class="modal-del-btn" id="cdDelBtn" onclick="clearCountdown()">remove countdown</button>
+  </div>
 </div>
 
 <!-- TOPBAR -->
@@ -1144,6 +1173,79 @@ function initials(name){return name.split(' ').map(function(w){return w[0]||'';}
 function addDays(ds,n){var d=new Date(ds+'T12:00');d.setDate(d.getDate()+n);return toDS(d);}
 
 // ── SPLASH ──
+// ── SPLASH COUNTDOWN ──
+var countdown = JSON.parse(localStorage.getItem('ag6_countdown') || 'null');
+
+function renderSplashCountdown(){
+  var box = document.getElementById('spCountdown');
+  var setBtn = document.getElementById('spSetCountdown');
+  if(!countdown || !countdown.date){
+    box.style.display = 'none';
+    setBtn.style.display = 'block';
+    return;
+  }
+  var target = new Date(countdown.date + 'T00:00:00');
+  var now = new Date();
+  now.setHours(0,0,0,0);
+  var diff = Math.round((target - now) / (1000*60*60*24));
+
+  box.style.display = 'block';
+  setBtn.style.display = 'block';
+  setBtn.textContent = 'edit';
+
+  var daysEl = document.getElementById('spCountDays');
+  var unitEl = document.getElementById('spCountUnit');
+  var lblEl = document.getElementById('spCountLabel');
+
+  if(diff > 0){
+    daysEl.textContent = diff;
+    unitEl.textContent = diff === 1 ? 'day to go' : 'days to go';
+    daysEl.style.color = diff <= 7 ? '#B83C2B' : diff <= 14 ? '#D4900A' : 'var(--b)';
+  } else if(diff === 0){
+    daysEl.textContent = 'TODAY';
+    daysEl.style.fontSize = '48px';
+    unitEl.textContent = '';
+    daysEl.style.color = '#3D8B5E';
+  } else {
+    daysEl.textContent = Math.abs(diff);
+    unitEl.textContent = 'days ago';
+    daysEl.style.color = 'var(--mu)';
+  }
+  lblEl.textContent = countdown.label || '';
+}
+
+function openCountdownSetup(e){
+  e.stopPropagation();
+  document.getElementById('cdLabel').value = countdown ? countdown.label||'' : '';
+  document.getElementById('cdDate').value = countdown ? countdown.date||'' : '';
+  document.getElementById('cdDelBtn').style.display = countdown ? 'block' : 'none';
+  document.getElementById('countdownModal').classList.add('open');
+}
+
+function closeCountdownModal(){
+  document.getElementById('countdownModal').classList.remove('open');
+}
+function closeCountdownModalBg(e){
+  if(e.target===document.getElementById('countdownModal')) closeCountdownModal();
+}
+
+function saveCountdown(){
+  var label = document.getElementById('cdLabel').value.trim();
+  var date = document.getElementById('cdDate').value;
+  if(!date){document.getElementById('cdDate').style.borderBottomColor='var(--red)';return;}
+  countdown = {label: label||'Deadline', date: date};
+  localStorage.setItem('ag6_countdown', JSON.stringify(countdown));
+  closeCountdownModal();
+  renderSplashCountdown();
+}
+
+function clearCountdown(){
+  countdown = null;
+  localStorage.removeItem('ag6_countdown');
+  closeCountdownModal();
+  renderSplashCountdown();
+}
+
 function dismissSplash(){
   var sp=document.getElementById('splash');
   sp.classList.add('hide');
@@ -1161,6 +1263,7 @@ function dismissSplash(){
   document.getElementById('dwAddInp').addEventListener('keydown',function(ev){if(ev.key==='Enter')dwQuickAdd();});
   renderAll();
   startWhTimer();
+  renderSplashCountdown();
   setTimeout(dismissSplash,3000);
 })();
 
@@ -2123,8 +2226,19 @@ function renderQueueWall(){
     if(j.done) metaParts.push('done ✓');
     var meta=mkDiv('ql-meta');meta.textContent=metaParts.filter(Boolean).join(' · ');
     info.appendChild(nm);if(meta.textContent)info.appendChild(meta);
+    // delete button
+    var del=mkEl('button','');
+    del.style.cssText='background:rgba(255,255,255,.1);border:none;color:rgba(255,255,255,.5);font-size:16px;width:34px;height:34px;border-radius:8px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;';
+    del.textContent='×';
+    (function(jid,jname){del.onclick=function(e){
+      e.stopPropagation();
+      if(confirm('Remove "'+jname+'" from waiting?')){
+        queueJobs=queueJobs.filter(function(x){return x.id!==jid;});
+        persist();renderQueueWall();updateSideTabs();
+      }
+    };})(j.id,j.name);
     var arr=mkDiv('ql-arr');arr.textContent='›';
-    top.appendChild(num);top.appendChild(info);top.appendChild(arr);
+    top.appendChild(num);top.appendChild(info);top.appendChild(del);top.appendChild(arr);
     row.appendChild(top);
     // progress bar if estimate exists
     if(job&&job.hours>0){

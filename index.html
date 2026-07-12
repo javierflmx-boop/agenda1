@@ -809,17 +809,13 @@ body{font-family:'Barlow',sans-serif;font-weight:400;background:var(--w);color:v
     </div>
   </div>
 
-  <!-- COUNTDOWN BOX -->
-  <div class="countdown-box" id="countdownBox" onclick="openCountdownSetup(event)">
-    <div class="cd-left">
-      <div class="cd-label" id="cdBoxLabel">set a countdown</div>
-      <div class="cd-sub" id="cdBoxSub">deadline, event, or goal</div>
+  <!-- COUNTDOWNS LIST -->
+  <div style="margin:0 18px 20px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+      <span style="font-size:9px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--mu);">Countdowns</span>
+      <button onclick="openCountdownSetup(event,null)" style="background:var(--b);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;padding:6px 12px;cursor:pointer;letter-spacing:.06em;">+ Add</button>
     </div>
-    <div class="cd-right">
-      <div class="cd-days" id="cdBoxDays"></div>
-      <div class="cd-unit" id="cdBoxUnit"></div>
-    </div>
-    <div class="cd-arrow">›</div>
+    <div id="countdownList"></div>
   </div>
 </div>
 
@@ -1203,99 +1199,129 @@ function initials(name){return name.split(' ').map(function(w){return w[0]||'';}
 function addDays(ds,n){var d=new Date(ds+'T12:00');d.setDate(d.getDate()+n);return toDS(d);}
 
 // ── SPLASH ──
-// ── SPLASH COUNTDOWN ──
-var countdown = JSON.parse(localStorage.getItem('ag6_countdown') || 'null');
+// ── COUNTDOWNS (array) ──
+var countdowns = JSON.parse(localStorage.getItem('ag6_countdowns') || 'null') ||
+  // migrate old single countdown if exists
+  (localStorage.getItem('ag6_countdown') ?
+    [Object.assign({id:'1'}, JSON.parse(localStorage.getItem('ag6_countdown')))] : []);
+var cdEditId = null;
 
 function renderSplashCountdown(){
-  // splash countdown display
+  // splash — show the nearest upcoming countdown
   var box = document.getElementById('spCountdown');
-  if(!countdown || !countdown.date){
-    box.style.display = 'none';
-  } else {
-    var target = new Date(countdown.date + 'T00:00:00');
-    var now = new Date(); now.setHours(0,0,0,0);
-    var diff = Math.round((target - now) / (1000*60*60*24));
-    box.style.display = 'block';
-    var daysEl = document.getElementById('spCountDays');
-    var unitEl = document.getElementById('spCountUnit');
-    var lblEl  = document.getElementById('spCountLabel');
-    if(diff > 0){
-      daysEl.textContent = diff;
-      unitEl.textContent = diff===1?'day to go':'days to go';
-      daysEl.style.color = diff<=7?'#B83C2B':diff<=14?'#D4900A':'var(--b)';
-    } else if(diff===0){
-      daysEl.textContent='TODAY';daysEl.style.fontSize='48px';
-      unitEl.textContent='';daysEl.style.color='#3D8B5E';
-    } else {
-      daysEl.textContent=Math.abs(diff);unitEl.textContent='days ago';daysEl.style.color='var(--mu)';
-    }
-    lblEl.textContent = countdown.label||'';
-  }
+  var now = new Date(); now.setHours(0,0,0,0);
+  var upcoming = countdowns
+    .map(function(c){return {c:c, diff:Math.round((new Date(c.date+'T00:00:00')-now)/(864e5))};})
+    .filter(function(x){return x.diff>=0;})
+    .sort(function(a,b){return a.diff-b.diff;});
 
-  // calendar box
+  if(!upcoming.length){box.style.display='none';}
+  else {
+    box.style.display='block';
+    var item=upcoming[0];
+    var daysEl=document.getElementById('spCountDays');
+    var unitEl=document.getElementById('spCountUnit');
+    var lblEl=document.getElementById('spCountLabel');
+    if(item.diff===0){daysEl.textContent='TODAY';daysEl.style.fontSize='48px';unitEl.textContent='';daysEl.style.color='#3D8B5E';}
+    else{daysEl.textContent=item.diff;daysEl.style.fontSize='72px';unitEl.textContent=item.diff===1?'day to go':'days to go';daysEl.style.color=item.diff<=7?'#B83C2B':item.diff<=14?'#D4900A':'var(--b)';}
+    lblEl.textContent=item.c.label||'';
+  }
   renderCountdownBox();
 }
 
 function renderCountdownBox(){
-  var lbl=document.getElementById('cdBoxLabel');
-  var sub=document.getElementById('cdBoxSub');
-  var days=document.getElementById('cdBoxDays');
-  var unit=document.getElementById('cdBoxUnit');
-  if(!lbl) return;
+  var list=document.getElementById('countdownList');
+  if(!list) return;
+  list.innerHTML='';
 
-  if(!countdown||!countdown.date){
-    lbl.textContent='set a countdown';
-    sub.textContent='deadline, event, or goal';
-    days.textContent='';unit.textContent='';
-    document.getElementById('countdownBox').style.borderStyle='dashed';
+  if(!countdowns.length){
+    var empty=document.createElement('div');
+    empty.style.cssText='font-size:13px;color:var(--mu);padding:12px 0;';
+    empty.textContent='No countdowns yet — tap + Add above';
+    list.appendChild(empty);
     return;
   }
-  document.getElementById('countdownBox').style.borderStyle='solid';
-  var target=new Date(countdown.date+'T00:00:00');
+
   var now=new Date();now.setHours(0,0,0,0);
-  var diff=Math.round((target-now)/(1000*60*60*24));
-  lbl.textContent=countdown.label||'Countdown';
-  if(diff>0){
-    sub.textContent=new Date(countdown.date+'T12:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
-    days.textContent=diff;
-    days.style.color=diff<=7?'#B83C2B':diff<=14?'#D4900A':'var(--b)';
-    unit.textContent=diff===1?'day':'days';
-  } else if(diff===0){
-    sub.textContent='today!';days.textContent='🎯';days.style.color='#3D8B5E';unit.textContent='';
-  } else {
-    sub.textContent='passed '+Math.abs(diff)+' days ago';days.textContent='';unit.textContent='';
-    days.style.color='var(--mu)';
-  }
+  var sorted=[].concat(countdowns).sort(function(a,b){
+    var da=new Date(a.date+'T00:00:00')-now;
+    var db=new Date(b.date+'T00:00:00')-now;
+    return da-db;
+  });
+
+  sorted.forEach(function(c){
+    var target=new Date(c.date+'T00:00:00');
+    var diff=Math.round((target-now)/(864e5));
+    var row=document.createElement('div');
+    row.className='countdown-box';
+    row.style.marginBottom='8px';
+    row.onclick=function(e){openCountdownSetup(e,c.id);};
+
+    var left=document.createElement('div');left.className='cd-left';
+    var lbl=document.createElement('div');lbl.className='cd-label';lbl.textContent=c.label||'Countdown';
+    var sub=document.createElement('div');sub.className='cd-sub';
+    sub.textContent=target.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+    left.appendChild(lbl);left.appendChild(sub);
+
+    var right=document.createElement('div');right.className='cd-right';
+    var daysEl=document.createElement('div');daysEl.className='cd-days';
+    var unitEl=document.createElement('div');unitEl.className='cd-unit';
+    if(diff>0){
+      daysEl.textContent=diff;
+      daysEl.style.color=diff<=7?'#B83C2B':diff<=14?'#D4900A':'var(--b)';
+      unitEl.textContent=diff===1?'day':'days';
+    } else if(diff===0){
+      daysEl.textContent='🎯';unitEl.textContent='today!';daysEl.style.color='#3D8B5E';
+    } else {
+      daysEl.textContent=Math.abs(diff);daysEl.style.color='var(--mu)';unitEl.textContent='ago';
+      row.style.opacity='.5';
+    }
+    right.appendChild(daysEl);right.appendChild(unitEl);
+
+    var arr=document.createElement('div');arr.className='cd-arrow';arr.textContent='›';
+    row.appendChild(left);row.appendChild(right);row.appendChild(arr);
+    list.appendChild(row);
+  });
 }
 
-function openCountdownSetup(e){
+function openCountdownSetup(e,id){
   e.stopPropagation();
-  document.getElementById('cdLabel').value = countdown ? countdown.label||'' : '';
-  document.getElementById('cdDate').value = countdown ? countdown.date||'' : '';
-  document.getElementById('cdDelBtn').style.display = countdown ? 'block' : 'none';
+  cdEditId=id||null;
+  var c=id?countdowns.find(function(x){return x.id===id;}):null;
+  document.getElementById('cdLabel').value=c?c.label:'';
+  document.getElementById('cdDate').value=c?c.date:'';
+  document.getElementById('cdDelBtn').style.display=c?'block':'none';
   document.getElementById('countdownModal').classList.add('open');
 }
 
 function closeCountdownModal(){
   document.getElementById('countdownModal').classList.remove('open');
+  cdEditId=null;
 }
 function closeCountdownModalBg(e){
   if(e.target===document.getElementById('countdownModal')) closeCountdownModal();
 }
 
 function saveCountdown(){
-  var label = document.getElementById('cdLabel').value.trim();
-  var date = document.getElementById('cdDate').value;
+  var label=document.getElementById('cdLabel').value.trim();
+  var date=document.getElementById('cdDate').value;
   if(!date){document.getElementById('cdDate').style.borderBottomColor='var(--red)';return;}
-  countdown = {label: label||'Deadline', date: date};
-  localStorage.setItem('ag6_countdown', JSON.stringify(countdown));
+  document.getElementById('cdDate').style.borderBottomColor='';
+  if(cdEditId){
+    var idx=countdowns.findIndex(function(x){return x.id===cdEditId;});
+    if(idx>-1) countdowns[idx]=Object.assign({},countdowns[idx],{label:label||'Countdown',date:date});
+  } else {
+    countdowns.push({id:Date.now()+'',label:label||'Countdown',date:date});
+  }
+  localStorage.setItem('ag6_countdowns',JSON.stringify(countdowns));
   closeCountdownModal();
   renderSplashCountdown();
 }
 
 function clearCountdown(){
-  countdown = null;
-  localStorage.removeItem('ag6_countdown');
+  if(!cdEditId) return;
+  countdowns=countdowns.filter(function(x){return x.id!==cdEditId;});
+  localStorage.setItem('ag6_countdowns',JSON.stringify(countdowns));
   closeCountdownModal();
   renderSplashCountdown();
 }

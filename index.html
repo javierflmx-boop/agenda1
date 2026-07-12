@@ -597,7 +597,24 @@ body{font-family:'Barlow',sans-serif;font-weight:400;background:var(--w);color:v
 }
 .cp-book-btn:active{background:#eee;}
 
-/* ── JOB PROGRESS BAR on calendar day ── */
+/* ── COUNTDOWN BOX ── */
+.countdown-box{
+  margin:0 18px 20px;
+  border:1px solid var(--ln);border-radius:8px;
+  padding:13px 15px;
+  display:flex;align-items:center;gap:12px;
+  cursor:pointer;-webkit-tap-highlight-color:transparent;
+  transition:background .12s;
+}
+.countdown-box:active{background:var(--g2);}
+.cd-left{flex:1;min-width:0;}
+.cd-label{font-size:13px;font-weight:500;color:var(--b);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.cd-sub{font-size:10px;color:var(--mu);margin-top:2px;}
+.cd-right{text-align:right;flex-shrink:0;}
+.cd-days{font-family:'Bebas Neue',sans-serif;font-size:32px;letter-spacing:1px;line-height:1;}
+.cd-unit{font-size:9px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--mu);}
+.cd-arrow{font-size:18px;color:var(--ln);flex-shrink:0;}
+
 .day-progress-bar{
   position:absolute;bottom:0;left:0;right:0;
   height:4px;background:var(--g2);
@@ -712,7 +729,7 @@ body{font-family:'Barlow',sans-serif;font-weight:400;background:var(--w);color:v
     <div id="spCountUnit" style="font-size:10px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--mu);margin-top:2px;"></div>
     <div id="spCountLabel" style="font-size:13px;font-weight:400;color:var(--mu);margin-top:6px;letter-spacing:.04em;"></div>
   </div>
-  <div id="spSetCountdown" style="margin-top:20px;font-size:10px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--ln);text-decoration:underline;" onclick="openCountdownSetup(event)">set countdown</div>
+  <div id="spSetCountdown" style="display:none;"></div>
   <div class="sp-tap">tap to open</div>
 </div>
 
@@ -790,6 +807,19 @@ body{font-family:'Barlow',sans-serif;font-weight:400;background:var(--w);color:v
       <div class="wh-picker-lbl">Set your hours for each day</div>
       <div class="wh-week-rows" id="whWeekRows"></div>
     </div>
+  </div>
+
+  <!-- COUNTDOWN BOX -->
+  <div class="countdown-box" id="countdownBox" onclick="openCountdownSetup(event)">
+    <div class="cd-left">
+      <div class="cd-label" id="cdBoxLabel">set a countdown</div>
+      <div class="cd-sub" id="cdBoxSub">deadline, event, or goal</div>
+    </div>
+    <div class="cd-right">
+      <div class="cd-days" id="cdBoxDays"></div>
+      <div class="cd-unit" id="cdBoxUnit"></div>
+    </div>
+    <div class="cd-arrow">›</div>
   </div>
 </div>
 
@@ -1177,41 +1207,65 @@ function addDays(ds,n){var d=new Date(ds+'T12:00');d.setDate(d.getDate()+n);retu
 var countdown = JSON.parse(localStorage.getItem('ag6_countdown') || 'null');
 
 function renderSplashCountdown(){
+  // splash countdown display
   var box = document.getElementById('spCountdown');
-  var setBtn = document.getElementById('spSetCountdown');
   if(!countdown || !countdown.date){
     box.style.display = 'none';
-    setBtn.style.display = 'block';
+  } else {
+    var target = new Date(countdown.date + 'T00:00:00');
+    var now = new Date(); now.setHours(0,0,0,0);
+    var diff = Math.round((target - now) / (1000*60*60*24));
+    box.style.display = 'block';
+    var daysEl = document.getElementById('spCountDays');
+    var unitEl = document.getElementById('spCountUnit');
+    var lblEl  = document.getElementById('spCountLabel');
+    if(diff > 0){
+      daysEl.textContent = diff;
+      unitEl.textContent = diff===1?'day to go':'days to go';
+      daysEl.style.color = diff<=7?'#B83C2B':diff<=14?'#D4900A':'var(--b)';
+    } else if(diff===0){
+      daysEl.textContent='TODAY';daysEl.style.fontSize='48px';
+      unitEl.textContent='';daysEl.style.color='#3D8B5E';
+    } else {
+      daysEl.textContent=Math.abs(diff);unitEl.textContent='days ago';daysEl.style.color='var(--mu)';
+    }
+    lblEl.textContent = countdown.label||'';
+  }
+
+  // calendar box
+  renderCountdownBox();
+}
+
+function renderCountdownBox(){
+  var lbl=document.getElementById('cdBoxLabel');
+  var sub=document.getElementById('cdBoxSub');
+  var days=document.getElementById('cdBoxDays');
+  var unit=document.getElementById('cdBoxUnit');
+  if(!lbl) return;
+
+  if(!countdown||!countdown.date){
+    lbl.textContent='set a countdown';
+    sub.textContent='deadline, event, or goal';
+    days.textContent='';unit.textContent='';
+    document.getElementById('countdownBox').style.borderStyle='dashed';
     return;
   }
-  var target = new Date(countdown.date + 'T00:00:00');
-  var now = new Date();
-  now.setHours(0,0,0,0);
-  var diff = Math.round((target - now) / (1000*60*60*24));
-
-  box.style.display = 'block';
-  setBtn.style.display = 'block';
-  setBtn.textContent = 'edit';
-
-  var daysEl = document.getElementById('spCountDays');
-  var unitEl = document.getElementById('spCountUnit');
-  var lblEl = document.getElementById('spCountLabel');
-
-  if(diff > 0){
-    daysEl.textContent = diff;
-    unitEl.textContent = diff === 1 ? 'day to go' : 'days to go';
-    daysEl.style.color = diff <= 7 ? '#B83C2B' : diff <= 14 ? '#D4900A' : 'var(--b)';
-  } else if(diff === 0){
-    daysEl.textContent = 'TODAY';
-    daysEl.style.fontSize = '48px';
-    unitEl.textContent = '';
-    daysEl.style.color = '#3D8B5E';
+  document.getElementById('countdownBox').style.borderStyle='solid';
+  var target=new Date(countdown.date+'T00:00:00');
+  var now=new Date();now.setHours(0,0,0,0);
+  var diff=Math.round((target-now)/(1000*60*60*24));
+  lbl.textContent=countdown.label||'Countdown';
+  if(diff>0){
+    sub.textContent=new Date(countdown.date+'T12:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+    days.textContent=diff;
+    days.style.color=diff<=7?'#B83C2B':diff<=14?'#D4900A':'var(--b)';
+    unit.textContent=diff===1?'day':'days';
+  } else if(diff===0){
+    sub.textContent='today!';days.textContent='🎯';days.style.color='#3D8B5E';unit.textContent='';
   } else {
-    daysEl.textContent = Math.abs(diff);
-    unitEl.textContent = 'days ago';
-    daysEl.style.color = 'var(--mu)';
+    sub.textContent='passed '+Math.abs(diff)+' days ago';days.textContent='';unit.textContent='';
+    days.style.color='var(--mu)';
   }
-  lblEl.textContent = countdown.label || '';
 }
 
 function openCountdownSetup(e){
